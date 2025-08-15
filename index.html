@@ -40,6 +40,8 @@
     /* スタート画面 */
     .start-screen{text-align:center;padding:20px;background:rgba(255,255,255,0.1);border-radius:20px;margin:20px;backdrop-filter:blur(10px);box-shadow:0 8px 32px rgba(0,0,0,0.2)}
     .start-screen h1{font-size:32px;margin:20px 0;color:#fff;text-shadow:2px 2px 4px rgba(0,0,0,0.3)}
+    .app-icon{width:80px;height:80px;border-radius:16px;margin:0 auto 20px auto;display:none;box-shadow:0 4px 16px rgba(0,0,0,0.3)}
+    .app-icon.ready{display:block}
     .game-description{font-size:14px;margin:20px 0;color:#fff;line-height:1.6;text-shadow:1px 1px 2px rgba(0,0,0,0.3)}
     .start-btn{background:linear-gradient(135deg,#f39c12,#e67e22);color:#fff;border:none;border-radius:16px;padding:16px 32px;font-size:18px;font-weight:bold;cursor:pointer;box-shadow:0 8px 24px rgba(243,156,18,.3);margin:20px 0;text-shadow:1px 1px 2px rgba(0,0,0,0.3)}
     .start-btn:hover{transform:translateY(-2px);box-shadow:0 12px 32px rgba(243,156,18,.4)}
@@ -59,9 +61,7 @@
 <div id="wrap">
   <!-- スタート画面 -->
   <div id="startScreen" class="start-screen">
-    <header id="hdr">
-      <img id="appicon" alt="icon"/>
-    </header>
+    <img id="appicon" alt="アプリアイコン" class="app-icon"/>
     <h1>はむケツぽよぽよ</h1>
     
     <div class="install-section">
@@ -169,6 +169,26 @@
   const TYPES = 6;
   const COLORS = ['#f5c6a5', '#e0f0ff', '#c6d0ff', '#ffd9d9', '#c0ffc8', '#ffe6a8'];
 
+  // はむケツ画像読み込み
+  const hamImages = Array.from({length: TYPES}, (_, i) => new Image());
+  let useImages = false;
+  let loadedImages = 0;
+
+  hamImages.forEach((img, i) => {
+    img.onload = () => {
+      loadedImages++;
+      console.log(`はむケツ画像 ${i + 1}/6 読み込み完了: assets/ham_${String(i + 1).padStart(2, '0')}.png`);
+      if (loadedImages === TYPES) {
+        useImages = true;
+        console.log('全てのはむケツ画像が読み込まれました！');
+      }
+    };
+    img.onerror = () => {
+      console.log(`はむケツ画像が見つかりません: assets/ham_${String(i + 1).padStart(2, '0')}.png（カラー円で代用）`);
+    };
+    img.src = `assets/ham_${String(i + 1).padStart(2, '0')}.png`;
+  });
+
   // ゲーム状態
   let gameStarted = false;
   let grid;
@@ -195,28 +215,48 @@
   // アプリアイコン読み込み
   const icon = new Image();
   icon.onload = () => {
-    document.getElementById('hdr').classList.add('ready');
-    document.getElementById('appicon').src = icon.src;
+    const iconElement = document.getElementById('appicon');
+    iconElement.src = icon.src;
+    iconElement.classList.add('ready');
     console.log('アプリアイコン ketsupoyo.png が読み込まれました');
   };
   icon.onerror = () => {
-    console.log('アプリアイコン ketsupoyo.png が見つかりません（任意）- スタート画面左上とPWAアイコンに使用されます');
+    console.log('アプリアイコン ketsupoyo.png が見つかりません（任意）- スタート画面とPWAアイコンに使用されます');
   };
   icon.src = 'ketsupoyo.png';
 
-  // PWAインストール
+  // PWAインストール（自動プロンプト対応）
   let deferredPrompt;
+  let installPromptShown = false;
+
   window.addEventListener('beforeinstallprompt', (e) => {
     e.preventDefault();
     deferredPrompt = e;
     installBtn.style.display = 'inline-flex';
+    
+    // 5秒後に自動でインストールプロンプトを表示
+    if (!installPromptShown) {
+      setTimeout(() => {
+        if (deferredPrompt && !installPromptShown) {
+          showInstallPrompt();
+        }
+      }, 5000);
+    }
   });
+
+  async function showInstallPrompt() {
+    if (deferredPrompt && !installPromptShown) {
+      installPromptShown = true;
+      deferredPrompt.prompt();
+      const { outcome } = await deferredPrompt.userChoice;
+      console.log(`インストール結果: ${outcome}`);
+      deferredPrompt = null;
+    }
+  }
 
   installBtn.addEventListener('click', async () => {
     if (deferredPrompt) {
-      deferredPrompt.prompt();
-      const { outcome } = await deferredPrompt.userChoice;
-      deferredPrompt = null;
+      await showInstallPrompt();
     } else {
       // フォールバック説明
       alert('ブラウザのメニューから「ホーム画面に追加」を選択してください');
@@ -235,15 +275,16 @@
 
   // Xシェアボタン
   shareXBtn.addEventListener('click', () => {
-    const text = encodeURIComponent('はむケツぽよぽよで遊んでみてね！🐹✨\n4個以上つなげて消すパズルゲーム\n\n#はむちら #はむケツぽよぽよ');
-    const url = encodeURIComponent(location.href);
+    const text = encodeURIComponent('はむケツぽよぽよで遊んでみてね！🐹✨\nはむケツを4個以上つなげて、ぷるぷる消すパズルゲーム\n\n#はむチラ #はむケツぽよぽよ');
+    const url = encodeURIComponent('https://hamuchiranagaya.github.io/ketsu-poyo/');
     window.open(`https://twitter.com/intent/tweet?text=${text}&url=${url}`, '_blank');
   });
 
   // URLコピーボタン
   copyUrlBtn.addEventListener('click', async () => {
+    const gameUrl = 'https://hamuchiranagaya.github.io/ketsu-poyo/';
     try {
-      await navigator.clipboard.writeText(location.href);
+      await navigator.clipboard.writeText(gameUrl);
       copyUrlBtn.innerHTML = '<span>✅</span><span>コピー完了</span>';
       setTimeout(() => {
         copyUrlBtn.innerHTML = '<span>📋</span><span>URLコピー</span>';
@@ -251,7 +292,7 @@
     } catch (err) {
       // フォールバック
       const textArea = document.createElement('textarea');
-      textArea.value = location.href;
+      textArea.value = gameUrl;
       document.body.appendChild(textArea);
       textArea.select();
       document.execCommand('copy');
@@ -559,20 +600,25 @@
     }
   }
 
-  // ブロック落下
+  // ブロック落下（重力処理）- アニメーション対応
   function dropBlocks() {
+    let hasMoved = false;
+    
+    // 下から上に向かって、空きがあれば1段階ずつ落とす
     for (let c = 0; c < COLS; c++) {
-      let writePos = ROWS - 1;
-      
-      for (let r = ROWS - 1; r >= 0; r--) {
-        if (grid[r][c].type) {
-          if (r !== writePos) {
-            grid[writePos][c] = grid[r][c];
-            grid[r][c] = empty();
-          }
-          writePos--;
+      for (let r = ROWS - 2; r >= 0; r--) { // 最下段は除く
+        if (grid[r][c].type !== 0 && grid[r + 1][c].type === 0) {
+          // 1つ下に落とす
+          grid[r + 1][c] = { ...grid[r][c] };
+          grid[r][c] = empty();
+          hasMoved = true;
         }
       }
+    }
+    
+    // まだ落ちるブロックがあれば再帰的に処理
+    if (hasMoved) {
+      setTimeout(() => dropBlocks(), 50);
     }
   }
 
@@ -621,26 +667,32 @@
       ctx.translate(-cx, -cy);
     }
     
-    const r = size * 0.45;
-    
-    const grad = ctx.createRadialGradient(
-      cx - r * 0.4, cy - r * 0.4, r * 0.2,
-      cx, cy, r
-    );
-    const base = COLORS[(type - 1) % COLORS.length];
-    grad.addColorStop(0, '#ffffff');
-    grad.addColorStop(0.15, base);
-    grad.addColorStop(1, '#333');
-    
-    ctx.fillStyle = grad;
-    ctx.beginPath();
-    ctx.arc(cx, cy, r, 0, Math.PI * 2);
-    ctx.fill();
-    
-    ctx.fillStyle = 'rgba(255,255,255,0.6)';
-    ctx.beginPath();
-    ctx.arc(cx + r * 0.3, cy - r * 0.2, r * 0.15, 0, Math.PI * 2);
-    ctx.fill();
+    // はむケツ画像があれば画像を表示、なければ円を表示
+    if (useImages && hamImages[type - 1] && hamImages[type - 1].complete) {
+      ctx.drawImage(hamImages[type - 1], x + shakeX, y + shakeY, size, size);
+    } else {
+      // フォールバック：カラー円
+      const r = size * 0.45;
+      
+      const grad = ctx.createRadialGradient(
+        cx - r * 0.4, cy - r * 0.4, r * 0.2,
+        cx, cy, r
+      );
+      const base = COLORS[(type - 1) % COLORS.length];
+      grad.addColorStop(0, '#ffffff');
+      grad.addColorStop(0.15, base);
+      grad.addColorStop(1, '#333');
+      
+      ctx.fillStyle = grad;
+      ctx.beginPath();
+      ctx.arc(cx, cy, r, 0, Math.PI * 2);
+      ctx.fill();
+      
+      ctx.fillStyle = 'rgba(255,255,255,0.6)';
+      ctx.beginPath();
+      ctx.arc(cx + r * 0.3, cy - r * 0.2, r * 0.15, 0, Math.PI * 2);
+      ctx.fill();
+    }
     
     ctx.restore();
   }
@@ -652,10 +704,18 @@
       
       ctx.save();
       ctx.globalAlpha = alpha;
-      ctx.fillStyle = COLORS[(p.type - 1) % COLORS.length];
-      ctx.beginPath();
-      ctx.arc(p.x, p.y, size * 0.15, 0, Math.PI * 2);
-      ctx.fill();
+      
+      // はむケツ画像があれば小さな画像、なければ円
+      if (useImages && hamImages[p.type - 1] && hamImages[p.type - 1].complete) {
+        const imgSize = size * 0.3;
+        ctx.drawImage(hamImages[p.type - 1], p.x - imgSize/2, p.y - imgSize/2, imgSize, imgSize);
+      } else {
+        ctx.fillStyle = COLORS[(p.type - 1) % COLORS.length];
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, size * 0.15, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      
       ctx.restore();
     }
   }
