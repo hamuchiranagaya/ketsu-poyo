@@ -4,8 +4,9 @@
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
   <title>はむケツぽよぽよ</title>
-  <link rel="manifest" href="data:application/json;base64,eyJuYW1lIjoi44Gv44KA44Kx44OE44G944KI44G444KI44KIIiwic2hvcnRfbmFtZSI6Ijw0GN44KA44Kx44OEIiwiZGVzY3JpcHRpb24iOiLjgYvjgo/jgYTjgYTjga/jgoDjgrHjg4Tjga7jg5Hjg6rjg6vjgrLjg7zjg6AiLCJzdGFydF91cmwiOiIuLyIsImRpc3BsYXkiOiJzdGFuZGFsb25lIiwiYmFja2dyb3VuZF9jb2xvciI6IiMwYjBiMTAiLCJ0aGVtZV9jb2xvciI6IiMwYjBiMTAiLCJvcmllbnRhdGlvbiI6InBvcnRyYWl0IiwiaWNvbnMiOlt7InNyYyI6ImtldHN1cG95by5wbmciLCJzaXplcyI6IjE5MngxOTIiLCJ0eXBlIjoiaW1hZ2UvcG5nIiwicHVycG9zZSI6ImFueSBtYXNrYWJsZSJ9XSwiY2F0ZWdvcmllcyI6WyJnYW1lcyIsImVudGVydGFpbm1lbnQiXX0=">
-  <meta name="theme-color" content="#0b0b10">
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#4facfe">
+  <link rel="icon" href="ketsupoyo.png" type="image/png">
   <style>
     :root{--bg:linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);--panel:#2a3f5f;--fg:#fff;--muted:#b8c6db;--btn:#34495e;--accent:#f39c12;--card-bg:#34495e;}
     html,body{margin:0;padding:0;background:var(--bg);color:var(--fg);font-family:system-ui,-apple-system,'Segoe UI',Roboto,'Hiragino Sans',sans-serif;min-height:100vh}
@@ -15,7 +16,7 @@
     header img{width:40px;height:40px;border-radius:8px;display:none}
     header.ready img{display:block}
     h1, h2{margin:0;font-size:20px;font-weight:800;text-align:center;text-shadow:2px 2px 4px rgba(0,0,0,0.3)}
-    h1{font-size:28px;color:#fff}
+    h1{font-size:32px;color:#fff}
     canvas{background:var(--panel);border-radius:12px;box-shadow:0 8px 24px rgba(0,0,0,.35)}
     .hud{display:flex;gap:14px;align-items:center;justify-content:center;flex-wrap:wrap}
     .hud .muted{color:var(--muted)}
@@ -53,6 +54,8 @@
     .share-buttons{display:flex;gap:12px;justify-content:center;margin:16px 0}
     .share-btn{background:rgba(255,255,255,0.2);border:none;border-radius:12px;padding:10px 16px;color:#fff;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:6px;backdrop-filter:blur(10px)}
     .share-btn:hover{background:rgba(255,255,255,0.3)}
+    .share-btn.x-btn{background:rgba(0,0,0,0.3);border:1px solid rgba(255,255,255,0.2)}
+    .share-btn.x-btn:hover{background:rgba(0,0,0,0.5)}
     .game-area{display:none}
     .game-area.active{display:flex;flex-direction:column;align-items:center;gap:10px}
   </style>
@@ -86,9 +89,8 @@
     </a>
     
     <div class="share-buttons">
-      <button id="shareX" class="share-btn">
-        <span>❌</span>
-        <span>Xでシェア</span>
+      <button id="shareX" class="share-btn x-btn">
+        Xでシェア
       </button>
       <button id="copyUrl" class="share-btn">
         <span>📋</span>
@@ -146,11 +148,107 @@
 (function() {
   'use strict';
   
+  // サービスワーカー登録
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('sw.js')
+        .then((registration) => {
+          console.log('サービスワーカー登録成功:', registration.scope);
+        })
+        .catch((error) => {
+          console.log('サービスワーカー登録失敗:', error);
+        });
+    });
+  }
+
+  // アプリアイコン読み込み
+  const icon = new Image();
+  icon.onload = () => {
+    const iconElement = document.getElementById('appicon');
+    iconElement.src = icon.src;
+    iconElement.classList.add('ready');
+    console.log('アプリアイコン ketsupoyo.png が読み込まれました');
+  };
+  icon.onerror = () => {
+    console.log('アプリアイコン ketsupoyo.png が見つかりません（任意）- スタート画面とPWAアイコンに使用されます');
+  };
+  icon.src = 'ketsupoyo.png';
+
+  // PWAインストール（より積極的な自動プロンプト）
+  let deferredPrompt;
+  let installPromptShown = false;
+
+  window.addEventListener('beforeinstallprompt', (e) => {
+    console.log('PWAインストールプロンプト準備完了');
+    e.preventDefault();
+    deferredPrompt = e;
+    const installBtn = document.getElementById('installBtn');
+    installBtn.style.display = 'inline-flex';
+    
+    // より早く自動プロンプトを表示（2秒後）
+    if (!installPromptShown) {
+      setTimeout(() => {
+        if (deferredPrompt && !installPromptShown) {
+          console.log('自動インストールプロンプト表示');
+          showInstallPrompt();
+        }
+      }, 2000);
+    }
+  });
+
+  // ページロード時にもチェック
+  window.addEventListener('load', () => {
+    console.log('ページロード完了');
+    // サービスワーカーがない場合の代替手段
+    if (!deferredPrompt && !installPromptShown) {
+      setTimeout(() => {
+        if (!installPromptShown) {
+          console.log('手動インストール案内表示');
+          alert('📱 このアプリをホーム画面に追加できます！\nブラウザのメニューから「ホーム画面に追加」を選択してください。');
+          installPromptShown = true;
+        }
+      }, 3000);
+    }
+  });
+
+  async function showInstallPrompt() {
+    if (deferredPrompt && !installPromptShown) {
+      installPromptShown = true;
+      try {
+        deferredPrompt.prompt();
+        const { outcome } = await deferredPrompt.userChoice;
+        console.log(`インストール結果: ${outcome}`);
+        deferredPrompt = null;
+      } catch (error) {
+        console.log('インストールプロンプトエラー:', error);
+      }
+    }
+  }
+
+  document.getElementById('installBtn').addEventListener('click', async () => {
+    if (deferredPrompt) {
+      await showInstallPrompt();
+    } else {
+      // より詳細なフォールバック説明
+      const userAgent = navigator.userAgent;
+      let instruction = '';
+      
+      if (userAgent.includes('Chrome')) {
+        instruction = 'Chrome: 右上メニュー（⋮）→「ホーム画面に追加」';
+      } else if (userAgent.includes('Safari')) {
+        instruction = 'Safari: 画面下部の共有ボタン（□↗）→「ホーム画面に追加」';
+      } else {
+        instruction = 'ブラウザのメニューから「ホーム画面に追加」を選択してください';
+      }
+      
+      alert(`📱 ${instruction}`);
+    }
+  });
+
   // UI要素
   const startScreen = document.getElementById('startScreen');
   const gameArea = document.getElementById('gameArea');
   const startBtn = document.getElementById('startBtn');
-  const installBtn = document.getElementById('installBtn');
   const shareXBtn = document.getElementById('shareX');
   const copyUrlBtn = document.getElementById('copyUrl');
   
@@ -210,98 +308,6 @@
   const timeEl = document.getElementById('time');
   const timeWrap = document.getElementById('timeWrap');
   const modeBtn = document.getElementById('mode');
-
-  // アプリアイコン読み込み
-  const icon = new Image();
-  icon.onload = () => {
-    const iconElement = document.getElementById('appicon');
-    iconElement.src = icon.src;
-    iconElement.classList.add('ready');
-    console.log('アプリアイコン ketsupoyo.png が読み込まれました');
-  };
-  icon.onerror = () => {
-    console.log('アプリアイコン ketsupoyo.png が見つかりません（任意）- スタート画面とPWAアイコンに使用されます');
-  };
-  icon.src = 'ketsupoyo.png';
-
-  // PWAインストール（自動プロンプト対応）
-  let deferredPrompt;
-  let installPromptShown = false;
-
-  window.addEventListener('beforeinstallprompt', (e) => {
-    e.preventDefault();
-    deferredPrompt = e;
-    installBtn.style.display = 'inline-flex';
-    
-    // 5秒後に自動でインストールプロンプトを表示
-    if (!installPromptShown) {
-      setTimeout(() => {
-        if (deferredPrompt && !installPromptShown) {
-          showInstallPrompt();
-        }
-      }, 5000);
-    }
-  });
-
-  async function showInstallPrompt() {
-    if (deferredPrompt && !installPromptShown) {
-      installPromptShown = true;
-      deferredPrompt.prompt();
-      const { outcome } = await deferredPrompt.userChoice;
-      console.log(`インストール結果: ${outcome}`);
-      deferredPrompt = null;
-    }
-  }
-
-  installBtn.addEventListener('click', async () => {
-    if (deferredPrompt) {
-      await showInstallPrompt();
-    } else {
-      // フォールバック説明
-      alert('ブラウザのメニューから「ホーム画面に追加」を選択してください');
-    }
-  });
-
-  // ゲームスタート
-  startBtn.addEventListener('click', () => {
-    startScreen.style.display = 'none';
-    gameArea.classList.add('active');
-    gameStarted = true;
-    fit();
-    restart();
-    requestAnimationFrame(loop);
-  });
-
-  // Xシェアボタン
-  shareXBtn.addEventListener('click', () => {
-    const text = encodeURIComponent('はむケツぽよぽよで遊んでみてね！🐹✨\nはむケツを4個以上つなげて、ぷるぷる消すパズルゲーム\n\n#はむチラ #はむケツぽよぽよ');
-    const url = encodeURIComponent('https://hamuchiranagaya.github.io/ketsu-poyo/');
-    window.open(`https://twitter.com/intent/tweet?text=${text}&url=${url}`, '_blank');
-  });
-
-  // URLコピーボタン
-  copyUrlBtn.addEventListener('click', async () => {
-    const gameUrl = 'https://hamuchiranagaya.github.io/ketsu-poyo/';
-    try {
-      await navigator.clipboard.writeText(gameUrl);
-      copyUrlBtn.innerHTML = '<span>✅</span><span>コピー完了</span>';
-      setTimeout(() => {
-        copyUrlBtn.innerHTML = '<span>📋</span><span>URLコピー</span>';
-      }, 2000);
-    } catch (err) {
-      // フォールバック
-      const textArea = document.createElement('textarea');
-      textArea.value = gameUrl;
-      document.body.appendChild(textArea);
-      textArea.select();
-      document.execCommand('copy');
-      document.body.removeChild(textArea);
-      copyUrlBtn.innerHTML = '<span>✅</span><span>コピー完了</span>';
-      setTimeout(() => {
-        copyUrlBtn.innerHTML = '<span>📋</span><span>URLコピー</span>';
-      }, 2000);
-    }
-  });
 
   // キャンバスサイズ調整（PC・スマホ対応）
   function fit() {
@@ -504,13 +510,19 @@
         phaseTimer = 0;
       }
     } else if (phase === 2) {
+      // 消去フェーズ（300ms）
       if (phaseTimer >= 300) {
         clearMarkedBlocks();
         dropBlocks();
         
+        // 少し待ってから次のスキャン
         phase = 0;
         phaseTimer = 0;
-        setTimeout(() => scanForMatches(), 100);
+        setTimeout(() => {
+          if (resolving) {
+            scanForMatches();
+          }
+        }, 150);
       }
     }
   }
@@ -905,6 +917,47 @@
     } else {
       timeWrap.style.display = 'none';
       modeBtn.textContent = '制限時間:OFF';
+    }
+  });
+
+  // ゲームスタート
+  startBtn.addEventListener('click', () => {
+    startScreen.style.display = 'none';
+    gameArea.classList.add('active');
+    gameStarted = true;
+    fit();
+    restart();
+    requestAnimationFrame(loop);
+  });
+
+  // Xシェアボタン
+  shareXBtn.addEventListener('click', () => {
+    const text = encodeURIComponent('はむケツぽよぽよで遊んでみてね！🐹✨\nはむケツを4個以上つなげて、ぷるぷる消すパズルゲーム\n\n#はむチラ #はむケツぽよぽよ');
+    const url = encodeURIComponent('https://hamuchiranagaya.github.io/ketsu-poyo/');
+    window.open(`https://twitter.com/intent/tweet?text=${text}&url=${url}`, '_blank');
+  });
+
+  // URLコピーボタン
+  copyUrlBtn.addEventListener('click', async () => {
+    const gameUrl = 'https://hamuchiranagaya.github.io/ketsu-poyo/';
+    try {
+      await navigator.clipboard.writeText(gameUrl);
+      copyUrlBtn.innerHTML = '<span>✅</span><span>コピー完了</span>';
+      setTimeout(() => {
+        copyUrlBtn.innerHTML = '<span>📋</span><span>URLコピー</span>';
+      }, 2000);
+    } catch (err) {
+      // フォールバック
+      const textArea = document.createElement('textarea');
+      textArea.value = gameUrl;
+      document.body.appendChild(textArea);
+      textArea.select();
+      document.execCommand('copy');
+      document.body.removeChild(textArea);
+      copyUrlBtn.innerHTML = '<span>✅</span><span>コピー完了</span>';
+      setTimeout(() => {
+        copyUrlBtn.innerHTML = '<span>📋</span><span>URLコピー</span>';
+      }, 2000);
     }
   });
 
