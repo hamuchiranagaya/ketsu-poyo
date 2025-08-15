@@ -3,427 +3,938 @@
 <head>
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
-  <title>はむケツぽよぽよ（試作・SFX）</title>
+  <title>はむケツぽよぽよ</title>
+  <link rel="manifest" href="data:application/json;base64,eyJuYW1lIjoi44Gv44KA44Kx44OE44G944KI44G444KI44KIIiwic2hvcnRfbmFtZSI6Ijw0GN44KA44Kx44OEIiwiZGVzY3JpcHRpb24iOiLjgYvjgo/jgYTjgYTjga/jgoDjgrHjg4Tjga7jg5Hjg6rjg6vjgrLjg7zjg6AiLCJzdGFydF91cmwiOiIuLyIsImRpc3BsYXkiOiJzdGFuZGFsb25lIiwiYmFja2dyb3VuZF9jb2xvciI6IiMwYjBiMTAiLCJ0aGVtZV9jb2xvciI6IiMwYjBiMTAiLCJvcmllbnRhdGlvbiI6InBvcnRyYWl0IiwiaWNvbnMiOlt7InNyYyI6ImtldHN1cG95by5wbmciLCJzaXplcyI6IjE5MngxOTIiLCJ0eXBlIjoiaW1hZ2UvcG5nIiwicHVycG9zZSI6ImFueSBtYXNrYWJsZSJ9XSwiY2F0ZWdvcmllcyI6WyJnYW1lcyIsImVudGVydGFpbm1lbnQiXX0=">
+  <meta name="theme-color" content="#0b0b10">
   <style>
-    html,body{margin:0;padding:0;background:#0b0b10;color:#fff;font-family:system-ui,-apple-system,'Segoe UI',Roboto,'Hiragino Sans',sans-serif}
-    #wrap{display:flex;flex-direction:column;align-items:center;gap:8px;padding:8px}
-    canvas{background:#111;border-radius:12px;box-shadow:0 8px 24px rgba(0,0,0,.35)}
-    .hud{display:flex;gap:12px;align-items:center;justify-content:center;flex-wrap:wrap}
-    .btnbar{display:grid;grid-template-columns:repeat(3,64px);grid-template-rows:repeat(2,64px);gap:8px;touch-action:manipulation}
-    button{border:none;border-radius:12px;padding:12px;background:#222;color:#fff;font-weight:700;font-size:14px;box-shadow:0 4px 12px rgba(0,0,0,.25)}
-    button:active{transform:translateY(1px);opacity:.9}
-    .wide{grid-column:span 3}
-    .note{opacity:.85;font-size:12px;text-align:center;line-height:1.4;max-width:560px}
-    a{color:#86e1ff}
+    :root{--bg:linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);--panel:#2a3f5f;--fg:#fff;--muted:#b8c6db;--btn:#34495e;--accent:#f39c12;--card-bg:#34495e;}
+    html,body{margin:0;padding:0;background:var(--bg);color:var(--fg);font-family:system-ui,-apple-system,'Segoe UI',Roboto,'Hiragino Sans',sans-serif;min-height:100vh}
+    body{background:linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)}
+    #wrap{display:flex;flex-direction:column;align-items:center;gap:10px;padding:12px 8px}
+    header{display:flex;align-items:center;gap:10px}
+    header img{width:40px;height:40px;border-radius:8px;display:none}
+    header.ready img{display:block}
+    h1, h2{margin:0;font-size:20px;font-weight:800;text-align:center;text-shadow:2px 2px 4px rgba(0,0,0,0.3)}
+    h1{font-size:28px;color:#fff}
+    canvas{background:var(--panel);border-radius:12px;box-shadow:0 8px 24px rgba(0,0,0,.35)}
+    .hud{display:flex;gap:14px;align-items:center;justify-content:center;flex-wrap:wrap}
+    .hud .muted{color:var(--muted)}
+    .btnbar{display:flex;justify-content:space-between;gap:4px;width:100%;touch-action:manipulation;flex-wrap:wrap}
+    .btnbar > button{flex:1;max-width:19%;height:60px;border:none;border-radius:12px;background:var(--btn);color:var(--fg);font-weight:700;font-size:14px;box-shadow:0 4px 12px rgba(0,0,0,.25)}
+    .btnbar > button:active{transform:translateY(1px);opacity:.9}
+    .btnbar > .wide{flex:1 1 100%;max-width:100%;margin-top:8px}
+    .note{opacity:.85;font-size:12px;text-align:center;line-height:1.4;max-width:620px;color:#fff;text-shadow:1px 1px 2px rgba(0,0,0,0.3)}
+    a{color:var(--accent);text-decoration:none}
+    a:hover{text-decoration:underline}
+    .pill{background:rgba(255,255,255,0.2);border-radius:999px;padding:6px 10px;font-size:12px;cursor:pointer;border:none;color:var(--fg);backdrop-filter:blur(10px)}
+    .pill:hover{background:rgba(255,255,255,0.3)}
+    .overlay{position:fixed;inset:0;background:rgba(0,0,0,.6);display:none;align-items:center;justify-content:center;padding:16px;z-index:1000}
+    .card{background:var(--card-bg);border:1px solid rgba(255,255,255,0.1);border-radius:14px;max-width:520px;width:96%;padding:16px;box-shadow:0 12px 32px rgba(0,0,0,.4)}
+    .card h3{margin:4px 0 10px 0}
+    .row{display:flex;gap:8px;flex-wrap:wrap}
+    .row button{background:rgba(255,255,255,0.1);border:none;border-radius:8px;padding:8px 16px;color:var(--fg);font-weight:600;cursor:pointer}
+    .row button:hover{background:rgba(255,255,255,0.2)}
+    .scores{display:flex;gap:8px;margin:10px 0}
+    .scores span{background:rgba(255,255,255,0.1);border-radius:8px;padding:6px 10px;font-weight:700}
+    
+    /* スタート画面 */
+    .start-screen{text-align:center;padding:20px;background:rgba(255,255,255,0.1);border-radius:20px;margin:20px;backdrop-filter:blur(10px);box-shadow:0 8px 32px rgba(0,0,0,0.2)}
+    .start-screen h1{font-size:32px;margin:20px 0;color:#fff;text-shadow:2px 2px 4px rgba(0,0,0,0.3)}
+    .game-description{font-size:14px;margin:20px 0;color:#fff;line-height:1.6;text-shadow:1px 1px 2px rgba(0,0,0,0.3)}
+    .start-btn{background:linear-gradient(135deg,#f39c12,#e67e22);color:#fff;border:none;border-radius:16px;padding:16px 32px;font-size:18px;font-weight:bold;cursor:pointer;box-shadow:0 8px 24px rgba(243,156,18,.3);margin:20px 0;text-shadow:1px 1px 2px rgba(0,0,0,0.3)}
+    .start-btn:hover{transform:translateY(-2px);box-shadow:0 12px 32px rgba(243,156,18,.4)}
+    .install-section{margin:20px 0;padding:16px;background:rgba(255,255,255,0.1);border-radius:12px;backdrop-filter:blur(10px)}
+    .install-btn{background:rgba(255,255,255,0.2);border:2px dashed rgba(255,255,255,0.4);border-radius:12px;padding:12px 20px;cursor:pointer;display:inline-flex;align-items:center;gap:8px;margin:8px 0;color:#fff;backdrop-filter:blur(10px)}
+    .install-btn:hover{background:rgba(255,255,255,0.3);border-color:rgba(255,255,255,0.6)}
+    .youtube-link{display:block;margin:16px auto;color:var(--accent);font-weight:600;text-shadow:1px 1px 2px rgba(0,0,0,0.3);text-align:center}
+    .youtube-link:hover{color:#fff;text-decoration:underline}
+    .share-buttons{display:flex;gap:12px;justify-content:center;margin:16px 0}
+    .share-btn{background:rgba(255,255,255,0.2);border:none;border-radius:12px;padding:10px 16px;color:#fff;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:6px;backdrop-filter:blur(10px)}
+    .share-btn:hover{background:rgba(255,255,255,0.3)}
+    .game-area{display:none}
+    .game-area.active{display:flex;flex-direction:column;align-items:center;gap:10px}
   </style>
 </head>
 <body>
 <div id="wrap">
-  <h2>はむケツぽよぽよ（試作）</h2>
-  <div class="hud">
-    <div>スコア: <span id="score">0</span></div>
-    <div>チェイン: <span id="chain">0</span></div>
-    <div><button id="restart">リスタート</button></div>
+  <!-- スタート画面 -->
+  <div id="startScreen" class="start-screen">
+    <header id="hdr">
+      <img id="appicon" alt="icon"/>
+    </header>
+    <h1>はむケツぽよぽよ</h1>
+    
+    <div class="install-section">
+      <p>📱 ホーム画面に追加してアプリのように使えます</p>
+      <button id="installBtn" class="install-btn">
+        <span>📲</span>
+        <span>ホーム画面に追加</span>
+      </button>
+    </div>
+    
+    <div class="game-description">
+      4個以上の同じ色のはむケツをつなげて消そう！<br/>
+      連鎖でスコアアップ！
+    </div>
+    
+    <button id="startBtn" class="start-btn">
+      ゲームスタート
+    </button>
+    
+    <a href="https://youtube.com/@hamuchira" target="_blank" class="youtube-link">
+      🎬 もっと！はむチラ長屋ch.
+    </a>
+    
+    <div class="share-buttons">
+      <button id="shareX" class="share-btn">
+        <span>❌</span>
+        <span>Xでシェア</span>
+      </button>
+      <button id="copyUrl" class="share-btn">
+        <span>📋</span>
+        <span>URLコピー</span>
+      </button>
+    </div>
   </div>
-  <canvas id="game" width="384" height="640"></canvas>
-  <div class="btnbar" aria-label="タッチ操作">
-    <button id="left">←</button>
-    <button id="down">↓</button>
-    <button id="right">→</button>
-    <button id="rotL">↺</button>
-    <button id="drop" class="wide">瞬間落下</button>
-    <button id="rotR">↻</button>
-  </div>
-  <div class="note">
-    操作：← → 移動 / ↑ 回転 / ↓ ソフトドロップ / スペース 瞬間落下 / R リスタート<br/>
-    画像差し替え：<code>assets/ham_01.png</code> ～ <code>ham_06.png</code> を置くと写真表示になります（任意）。
+
+  <!-- ゲーム画面 -->
+  <div id="gameArea" class="game-area">
+    <header>
+      <h2>はむケツぽよぽよ</h2>
+    </header>
+
+    <div class="hud">
+      <div>スコア: <span id="score">0</span></div>
+      <div>チェイン: <span id="chain">0</span></div>
+      <div id="timeWrap" class="muted" style="display:none;">残り: <span id="time">180</span>s</div>
+      <button id="mode" class="pill" title="制限時間モード切替">制限時間:OFF</button>
+    </div>
+
+    <canvas id="game" width="384" height="640"></canvas>
+
+    <div class="btnbar" aria-label="タップ操作">
+      <button id="rotL">↺</button>
+      <button id="left">←</button>
+      <button id="down">↓</button>
+      <button id="right">→</button>
+      <button id="rotR">↻</button>
+      <button id="drop" class="wide">瞬間落下</button>
+    </div>
+
+    <div class="note">
+      操作：← → 移動 / ↑ 回転 / ↓ ソフトドロップ / スペース 瞬間落下 / R リスタート
+    </div>
   </div>
 </div>
+
+<!-- Overlays -->
+<div id="overlay" class="overlay">
+  <div class="card" role="dialog" aria-modal="true">
+    <h3 id="ovTitle">結果</h3>
+    <p id="ovMsg"></p>
+    <div class="scores">ベスト: <span id="best1">-</span><span id="best2">-</span><span id="best3">-</span></div>
+    <div class="row" style="margin-top:10px">
+      <button id="retry">リトライ</button>
+      <button id="newGame">新しいゲーム</button>
+      <button id="share">シェア</button>
+      <button id="closeOv">閉じる</button>
+    </div>
+    <div id="shareAlt" class="note" style="display:none;margin-top:8px"></div>
+  </div>
+</div>
+
 <script>
-// はむケツぽよぽよ — ぷるぷる→バン！演出＋かわいいSFX
-(() => {
+(function() {
+  'use strict';
+  
+  // UI要素
+  const startScreen = document.getElementById('startScreen');
+  const gameArea = document.getElementById('gameArea');
+  const startBtn = document.getElementById('startBtn');
+  const installBtn = document.getElementById('installBtn');
+  const shareXBtn = document.getElementById('shareX');
+  const copyUrlBtn = document.getElementById('copyUrl');
+  
   const canvas = document.getElementById('game');
   const ctx = canvas.getContext('2d');
-  const W = canvas.width, H = canvas.height;
+  const W = canvas.width;
+  const H = canvas.height;
 
-  function fit() {
-    const scale = Math.min((window.innerWidth-16)/W, (window.innerHeight-220)/H);
-    canvas.style.width = (W*scale)+'px';
-    canvas.style.height = (H*scale)+'px';
-  }
-  window.addEventListener('resize', fit); fit();
-
-  // --------- Cute SFX (WebAudio synth, no external files) ---------
-  let actx;
-  function ensureAudio(){ if(!actx){ actx = new (window.AudioContext||window.webkitAudioContext)(); } }
-  function env(t0, dur, attack, decay){
-    const g = actx.createGain();
-    g.gain.setValueAtTime(0, t0);
-    g.gain.linearRampToValueAtTime(1, t0+attack);
-    g.gain.exponentialRampToValueAtTime(0.001, t0+attack+decay);
-    return g;
-  }
-  function sfxPoyo(){
-    if(!actx) return;
-    const t = actx.currentTime + 0.01;
-    const o = actx.createOscillator();
-    const g = env(t, .12, .01, .12);
-    o.type = 'sine';
-    o.frequency.setValueAtTime(720, t);
-    o.frequency.exponentialRampToValueAtTime(540, t+0.12);
-    o.connect(g).connect(actx.destination);
-    o.start(t); o.stop(t+0.2);
-    // tiny second bounce
-    const o2 = actx.createOscillator();
-    const g2 = env(t+0.08, .1, .005, .1);
-    o2.type = 'sine';
-    o2.frequency.setValueAtTime(600, t+0.08);
-    o2.frequency.exponentialRampToValueAtTime(480, t+0.18);
-    o2.connect(g2).connect(actx.destination);
-    o2.start(t+0.08); o2.stop(t+0.2);
-  }
-  function sfxPop(){
-    if(!actx) return;
-    const t = actx.currentTime + 0.01;
-    // white noise burst + sine blip
-    const bufferSize = actx.sampleRate * 0.08;
-    const buffer = actx.createBuffer(1, bufferSize, actx.sampleRate);
-    const data = buffer.getChannelData(0);
-    for(let i=0;i<bufferSize;i++){ data[i] = (Math.random()*2-1) * (1 - i/bufferSize); }
-    const src = actx.createBufferSource(); src.buffer = buffer;
-    const g = env(t, .12, .001, .12);
-    src.connect(g).connect(actx.destination);
-    src.start(t);
-    const o = actx.createOscillator(); o.type='sine';
-    o.frequency.setValueAtTime(520, t);
-    o.frequency.exponentialRampToValueAtTime(260, t+0.12);
-    const g2 = env(t, .12, .001, .12);
-    o.connect(g2).connect(actx.destination);
-    o.start(t); o.stop(t+0.15);
-  }
-  // Tap to enable audio on mobile
-  window.addEventListener('pointerdown', ()=>{ ensureAudio(); }, {once:true});
-
-  // --------- Game core ---------
-  const COLS = 6, ROWS = 12;
-  const TILE = Math.floor(Math.min(W/COLS, H/ROWS));
-  const PX = Math.floor((W - COLS*TILE)/2);
-  const PY = Math.floor((H - ROWS*TILE)/2);
-
+  // ゲーム設定
+  const COLS = 6;
+  const ROWS = 12;
+  const TILE = Math.floor(Math.min(W / COLS, H / ROWS));
+  const PX = Math.floor((W - COLS * TILE) / 2);
+  const PY = Math.floor((H - ROWS * TILE) / 2);
   const TYPES = 6;
-  const COLORS = ['#f5c6a5','#e0f0ff','#c6d0ff','#ffd9d9','#c0ffc8','#ffe6a8'];
+  const COLORS = ['#f5c6a5', '#e0f0ff', '#c6d0ff', '#ffd9d9', '#c0ffc8', '#ffe6a8'];
 
-  const images = Array.from({length:TYPES}, (_,i)=> new Image());
-  let useImages = false;
-  let loadedCount = 0;
-  images.forEach((img, i) => {
-    img.onload = () => { loadedCount++; if (loadedCount===TYPES) useImages = true; };
-    img.onerror = () => {};
-    img.src = 'assets/ham_' + String(i+1).padStart(2,'0') + '.png';
-  });
-
-  let grid, falling, nextPair, score, chain;
-  const empty = () => ({ type: 0, mark: false, t: 0, seed: 0 });
-  const resetGrid = () => Array.from({length:ROWS},()=>Array.from({length:COLS}, empty));
-
-  // resolve phases: 0 scan, 1 shake (120ms), 2 pop (220ms)
+  // ゲーム状態
+  let gameStarted = false;
+  let grid;
+  let falling;
+  let nextPair;
+  let score = 0;
+  let chain = 0;
+  let gameOver = false;
+  let timeMode = false;
+  let timeLeft = 180000;
+  let dropTimer = 0;
+  
+  // エフェクト用
   let resolving = false;
   let phase = 0;
-  let timer = 0;
-  let poppedAny = false;
-  let localChain = 0;
+  let phaseTimer = 0;
   let particles = [];
 
-  function newPair() {
-    return { cx: Math.floor(COLS/2), cy: -1,
-      blocks: [{dx:0, dy:0, type: rType()},{dx:0, dy:-1, type: rType()}],
-      rot: 0 };
+  // UI要素
+  const timeEl = document.getElementById('time');
+  const timeWrap = document.getElementById('timeWrap');
+  const modeBtn = document.getElementById('mode');
+
+  // アプリアイコン読み込み
+  const icon = new Image();
+  icon.onload = () => {
+    document.getElementById('hdr').classList.add('ready');
+    document.getElementById('appicon').src = icon.src;
+    console.log('アプリアイコン ketsupoyo.png が読み込まれました');
+  };
+  icon.onerror = () => {
+    console.log('アプリアイコン ketsupoyo.png が見つかりません（任意）- スタート画面左上とPWAアイコンに使用されます');
+  };
+  icon.src = 'ketsupoyo.png';
+
+  // PWAインストール
+  let deferredPrompt;
+  window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault();
+    deferredPrompt = e;
+    installBtn.style.display = 'inline-flex';
+  });
+
+  installBtn.addEventListener('click', async () => {
+    if (deferredPrompt) {
+      deferredPrompt.prompt();
+      const { outcome } = await deferredPrompt.userChoice;
+      deferredPrompt = null;
+    } else {
+      // フォールバック説明
+      alert('ブラウザのメニューから「ホーム画面に追加」を選択してください');
+    }
+  });
+
+  // ゲームスタート
+  startBtn.addEventListener('click', () => {
+    startScreen.style.display = 'none';
+    gameArea.classList.add('active');
+    gameStarted = true;
+    fit();
+    restart();
+    requestAnimationFrame(loop);
+  });
+
+  // Xシェアボタン
+  shareXBtn.addEventListener('click', () => {
+    const text = encodeURIComponent('はむケツぽよぽよで遊んでみてね！🐹✨\n4個以上つなげて消すパズルゲーム\n\n#はむちら #はむケツぽよぽよ');
+    const url = encodeURIComponent(location.href);
+    window.open(`https://twitter.com/intent/tweet?text=${text}&url=${url}`, '_blank');
+  });
+
+  // URLコピーボタン
+  copyUrlBtn.addEventListener('click', async () => {
+    try {
+      await navigator.clipboard.writeText(location.href);
+      copyUrlBtn.innerHTML = '<span>✅</span><span>コピー完了</span>';
+      setTimeout(() => {
+        copyUrlBtn.innerHTML = '<span>📋</span><span>URLコピー</span>';
+      }, 2000);
+    } catch (err) {
+      // フォールバック
+      const textArea = document.createElement('textarea');
+      textArea.value = location.href;
+      document.body.appendChild(textArea);
+      textArea.select();
+      document.execCommand('copy');
+      document.body.removeChild(textArea);
+      copyUrlBtn.innerHTML = '<span>✅</span><span>コピー完了</span>';
+      setTimeout(() => {
+        copyUrlBtn.innerHTML = '<span>📋</span><span>URLコピー</span>';
+      }, 2000);
+    }
+  });
+
+  // キャンバスサイズ調整
+  function fit() {
+    if (!gameStarted) return;
+    
+    const availableWidth = window.innerWidth - 16;
+    const availableHeight = window.innerHeight - 280;
+    
+    const scaleByWidth = availableWidth / W;
+    const scaleByHeight = availableHeight / H;
+    const scale = Math.min(scaleByWidth, scaleByHeight);
+    
+    const finalScale = Math.max(scale, availableWidth / W * 0.9);
+    
+    canvas.style.width = (W * finalScale) + 'px';
+    canvas.style.height = (H * finalScale) + 'px';
+    
+    const btnBar = document.querySelector('.btnbar');
+    btnBar.style.maxWidth = (W * finalScale) + 'px';
+    btnBar.style.width = (W * finalScale) + 'px';
   }
-  const rType = () => 1 + (Math.random()*TYPES|0);
+  window.addEventListener('resize', fit);
+
+  // 基本関数
+  function empty() {
+    return { type: 0, mark: false, seed: Math.random() * 1000 };
+  }
+
+  function resetGrid() {
+    return Array.from({ length: ROWS }, () => 
+      Array.from({ length: COLS }, empty)
+    );
+  }
+
+  function randomType() {
+    return 1 + Math.floor(Math.random() * TYPES);
+  }
+
+  function newPair() {
+    return {
+      cx: Math.floor(COLS / 2),
+      cy: -1,
+      blocks: [
+        { dx: 0, dy: 0, type: randomType() },
+        { dx: 0, dy: -1, type: randomType() }
+      ],
+      rot: 0
+    };
+  }
 
   function restart() {
-    grid = resetGrid(); score = 0; chain = 0;
+    grid = resetGrid();
+    score = 0;
+    chain = 0;
+    gameOver = false;
+    dropTimer = 0;
+    resolving = false;
+    phase = 0;
+    phaseTimer = 0;
     particles = [];
-    falling = newPair(); nextPair = newPair();
-    resolving = false; phase = 0; timer = 0; poppedAny = false; localChain = 0;
-    updHUD();
+    
+    falling = newPair();
+    nextPair = newPair();
+    
+    updateHUD();
+    hideOverlay();
   }
-  function updHUD(){
+
+  function updateHUD() {
     document.getElementById('score').textContent = score;
     document.getElementById('chain').textContent = chain;
   }
 
-  const keys = {};
-  window.addEventListener('keydown', e => { keys[e.code]=true; if (['ArrowUp','Space','KeyR'].includes(e.code)) e.preventDefault(); });
-  window.addEventListener('keyup', e => { keys[e.code]=false; });
-
-  const bindBtn = (id, fn) => {
-    const el = document.getElementById(id);
-    let t;
-    const press = () => { fn(); t = setInterval(fn, 120); };
-    const release = () => { clearInterval(t); };
-    el.addEventListener('touchstart', (e)=>{ e.preventDefault(); fn(); });
-    el.addEventListener('touchend', (e)=>{ e.preventDefault(); });
-    el.addEventListener('mousedown', press);
-    el.addEventListener('mouseup', release);
-    el.addEventListener('mouseleave', release);
-  };
-  bindBtn('left', ()=> move(-1));
-  bindBtn('right',()=> move(1));
-  bindBtn('down', ()=> sDrop());
-  bindBtn('rotL', ()=> rot(-1));
-  bindBtn('rotR', ()=> rot(1));
-  bindBtn('drop', ()=> hDrop());
-  document.getElementById('restart').onclick = ()=> restart();
-
-  function move(dx){ if (!falling || resolving) return; if (can(falling, dx, 0)) falling.cx += dx; }
-  function sDrop(){ if (!falling || resolving) return; if (can(falling, 0, 1)) falling.cy += 1; else lock(); }
-  function hDrop(){
-    if (!falling || resolving) return;
-    while (can(falling, 0, 1)) falling.cy += 1;
-    lock();
-  }
-  function rot(dir){
-    if (!falling || resolving) return;
-    const next = (falling.rot + dir + 4) % 4;
-    const nb = orient(next, falling.blocks[0].type, falling.blocks[1].type);
-    const tmp = { ...falling, blocks: nb, rot: next };
-    if (can(tmp, 0, 0)) { falling.blocks = nb; falling.rot = next; }
-  }
-  function orient(rot, t0, t1){
-    const b0 = {dx:0, dy:0, type:t0};
-    const b1 = {dx:0, dy:-1, type:t1};
-    if (rot===1){ b1.dx=1; b1.dy=0; }
-    if (rot===2){ b1.dx=0; b1.dy=1; }
-    if (rot===3){ b1.dx=-1; b1.dy=0; }
-    return [b0,b1];
-  }
-  function can(pair, dx, dy){
-    for (const b of pair.blocks){
-      const x = pair.cx + b.dx + dx;
-      const y = pair.cy + b.dy + dy;
-      if (x<0 || x>=COLS || y>=ROWS) return false;
-      if (y>=0 && grid[y][x].type) return false;
+  // 移動可能判定
+  function canMove(pair, dx, dy) {
+    for (const block of pair.blocks) {
+      const x = pair.cx + block.dx + dx;
+      const y = pair.cy + block.dy + dy;
+      
+      if (x < 0 || x >= COLS || y >= ROWS) {
+        return false;
+      }
+      
+      if (y >= 0 && grid[y][x].type) {
+        return false;
+      }
     }
     return true;
   }
 
-  function lock(){
-    for (const b of falling.blocks){
-      const x = falling.cx + b.dx, y = falling.cy + b.dy;
-      if (y<0){ restart(); return; }
-      grid[y][x] = { type: b.type, mark: false, t: 0, seed: Math.random()*1000 };
-    }
-    falling = null;
-    resolving = true; phase = 0; timer = 0; poppedAny = false; localChain = 0;
+  // 回転後の位置
+  function getRotatedBlocks(rot, type0, type1) {
+    const block0 = { dx: 0, dy: 0, type: type0 };
+    const block1 = { dx: 0, dy: -1, type: type1 };
+    
+    if (rot === 1) { block1.dx = 1; block1.dy = 0; }
+    if (rot === 2) { block1.dx = 0; block1.dy = 1; }
+    if (rot === 3) { block1.dx = -1; block1.dy = 0; }
+    
+    return [block0, block1];
   }
 
-  function scan(){
-    for (let r=0;r<ROWS;r++) for (let c=0;c<COLS;c++){ grid[r][c].mark=false; grid[r][c].t=0; }
-    const vis = Array.from({length:ROWS},()=>Array(COLS).fill(false));
-    const dirs = [[1,0],[-1,0],[0,1],[0,-1]];
-    const q=[];
-    function bfs(sr, sc){
-      const t = grid[sr][sc].type;
-      q.length=0; q.push([sr,sc]); vis[sr][sc]=true;
-      const cells=[[sr,sc]];
-      while(q.length){
-        const [r,c]=q.shift();
-        for(const [dr,dc] of dirs){
-          const nr=r+dr, nc=c+dc;
-          if(nr>=0&&nr<ROWS&&nc>=0&&nc<COLS&&!vis[nr][nc]&&grid[nr][nc].type===t){
-            vis[nr][nc]=true; q.push([nr,nc]); cells.push([nr,nc]);
+  // 操作関数
+  function moveLeft() {
+    if (!falling || gameOver || resolving) return;
+    if (canMove(falling, -1, 0)) {
+      falling.cx -= 1;
+    }
+  }
+
+  function moveRight() {
+    if (!falling || gameOver || resolving) return;
+    if (canMove(falling, 1, 0)) {
+      falling.cx += 1;
+    }
+  }
+
+  function softDrop() {
+    if (!falling || gameOver || resolving) return;
+    if (canMove(falling, 0, 1)) {
+      falling.cy += 1;
+    } else {
+      lockPiece();
+    }
+  }
+
+  function hardDrop() {
+    if (!falling || gameOver || resolving) return;
+    while (canMove(falling, 0, 1)) {
+      falling.cy += 1;
+    }
+    lockPiece();
+  }
+
+  function rotate() {
+    if (!falling || gameOver || resolving) return;
+    
+    const nextRot = (falling.rot + 1) % 4;
+    const newBlocks = getRotatedBlocks(
+      nextRot, 
+      falling.blocks[0].type, 
+      falling.blocks[1].type
+    );
+    
+    const tempPair = {
+      ...falling,
+      blocks: newBlocks,
+      rot: nextRot
+    };
+    
+    if (canMove(tempPair, 0, 0)) {
+      falling.blocks = newBlocks;
+      falling.rot = nextRot;
+    }
+  }
+
+  // ピース固定
+  function lockPiece() {
+    for (const block of falling.blocks) {
+      const x = falling.cx + block.dx;
+      const y = falling.cy + block.dy;
+      
+      if (y < 0) {
+        gameOverNow('上まで積み上がりました…');
+        return;
+      }
+      
+      grid[y][x] = { type: block.type, mark: false, seed: Math.random() * 1000 };
+    }
+    
+    falling = null;
+    resolving = true;
+    phase = 0;
+    phaseTimer = 0;
+  }
+
+  // エフェクト処理
+  function processResolving() {
+    phaseTimer += 16;
+    
+    if (phase === 0) {
+      scanForMatches();
+    } else if (phase === 1) {
+      if (phaseTimer >= 500) {
+        phase = 2;
+        phaseTimer = 0;
+      }
+    } else if (phase === 2) {
+      if (phaseTimer >= 300) {
+        clearMarkedBlocks();
+        dropBlocks();
+        
+        phase = 0;
+        phaseTimer = 0;
+        setTimeout(() => scanForMatches(), 100);
+      }
+    }
+  }
+
+  function scanForMatches() {
+    for (let r = 0; r < ROWS; r++) {
+      for (let c = 0; c < COLS; c++) {
+        grid[r][c].mark = false;
+      }
+    }
+
+    const visited = Array.from({ length: ROWS }, () => Array(COLS).fill(false));
+    const directions = [[1, 0], [-1, 0], [0, 1], [0, -1]];
+    let totalCleared = 0;
+
+    function floodFill(startR, startC) {
+      const type = grid[startR][startC].type;
+      const queue = [[startR, startC]];
+      const cells = [[startR, startC]];
+      visited[startR][startC] = true;
+
+      while (queue.length > 0) {
+        const [r, c] = queue.shift();
+        
+        for (const [dr, dc] of directions) {
+          const nr = r + dr;
+          const nc = c + dc;
+          
+          if (nr >= 0 && nr < ROWS && nc >= 0 && nc < COLS &&
+              !visited[nr][nc] && grid[nr][nc].type === type) {
+            visited[nr][nc] = true;
+            queue.push([nr, nc]);
+            cells.push([nr, nc]);
           }
         }
       }
+      
       return cells;
     }
-    let found = 0;
-    for (let r=0;r<ROWS;r++){
-      for (let c=0;c<COLS;c++){
-        if(!vis[r][c] && grid[r][c].type){
-          const cells = bfs(r,c);
-          if (cells.length>=4){
-            found += cells.length;
-            cells.forEach(([rr,cc])=>{ grid[rr][cc].mark = true; spawnBurst(PX+cc*TILE+TILE/2, PY+rr*TILE+TILE/2, grid[rr][cc].type); });
+
+    for (let r = 0; r < ROWS; r++) {
+      for (let c = 0; c < COLS; c++) {
+        if (!visited[r][c] && grid[r][c].type) {
+          const cells = floodFill(r, c);
+          if (cells.length >= 4) {
+            totalCleared += cells.length;
+            cells.forEach(([rr, cc]) => {
+              grid[rr][cc].mark = true;
+              spawnBurst(PX + cc * TILE + TILE / 2, PY + rr * TILE + TILE / 2, grid[rr][cc].type);
+            });
           }
         }
       }
     }
-    if (found>0){ phase = 1; timer = 0; poppedAny = true; localChain++; sfxPoyo(); }
-    else { // no pops
+
+    if (totalCleared > 0) {
+      phase = 1;
+      phaseTimer = 0;
+      chain++;
+    } else {
       resolving = false;
-      chain = poppedAny ? localChain : 0; updHUD();
-      falling = nextPair; nextPair = newPair();
+      falling = nextPair;
+      nextPair = newPair();
+      
+      let hasBlocks = false;
+      for (let r = 0; r < ROWS; r++) {
+        for (let c = 0; c < COLS; c++) {
+          if (grid[r][c].type) {
+            hasBlocks = true;
+            break;
+          }
+        }
+        if (hasBlocks) break;
+      }
+      
+      if (!hasBlocks) {
+        clearNow();
+      }
+      
+      updateHUD();
     }
   }
 
-  function spawnBurst(x, y, type){
-    const N = 10;
-    for (let i=0;i<N;i++){
-      const a = Math.random()*Math.PI*2;
-      const v = 1.5 + Math.random()*3.5;
+  function clearMarkedBlocks() {
+    let clearedCount = 0;
+    
+    for (let r = 0; r < ROWS; r++) {
+      for (let c = 0; c < COLS; c++) {
+        if (grid[r][c].mark) {
+          grid[r][c] = empty();
+          clearedCount++;
+        }
+      }
+    }
+    
+    if (clearedCount > 0) {
+      const points = clearedCount * 10 * (chain > 1 ? chain : 1);
+      score += points;
+      updateHUD();
+    }
+  }
+
+  // ブロック落下
+  function dropBlocks() {
+    for (let c = 0; c < COLS; c++) {
+      let writePos = ROWS - 1;
+      
+      for (let r = ROWS - 1; r >= 0; r--) {
+        if (grid[r][c].type) {
+          if (r !== writePos) {
+            grid[writePos][c] = grid[r][c];
+            grid[r][c] = empty();
+          }
+          writePos--;
+        }
+      }
+    }
+  }
+
+  // パーティクル
+  function spawnBurst(x, y, type) {
+    const numParticles = 12;
+    for (let i = 0; i < numParticles; i++) {
+      const angle = (Math.PI * 2 * i) / numParticles;
+      const speed = 3 + Math.random() * 4;
       particles.push({
         x, y,
-        vx: Math.cos(a)*v,
-        vy: Math.sin(a)*v - 1.5,
+        vx: Math.cos(angle) * speed,
+        vy: Math.sin(angle) * speed - 2,
         life: 0,
-        max: 450 + Math.random()*250,
-        type
+        maxLife: 600 + Math.random() * 400,
+        type,
+        size: TILE * (0.3 + Math.random() * 0.2)
       });
     }
   }
-  function updParticles(dt){
-    const g = 0.005;
+
+  function updateParticles(dt) {
+    const gravity = 0.015;
+    
     particles.forEach(p => {
       p.life += dt;
-      p.x += p.vx * dt*0.06;
-      p.y += p.vy * dt*0.06;
-      p.vy += g * dt;
+      p.x += p.vx * dt * 0.1;
+      p.y += p.vy * dt * 0.1;
+      p.vy += gravity * dt;
     });
-    particles = particles.filter(p => p.life < p.max);
+    
+    particles = particles.filter(p => p.life < p.maxLife);
   }
 
-  function clearAndFall(){
-    let cleared=0;
-    for (let r=0;r<ROWS;r++) for (let c=0;c<COLS;c++){
-      if (grid[r][c].mark){ grid[r][c] = empty(); cleared++; }
-    }
-    if (cleared>0){
-      const add = cleared*10 * (localChain>1? localChain : 1);
-      score += add; updHUD();
-      sfxPop();
-    }
-    for (let c=0;c<COLS;c++){ // gravity
-      let w = ROWS-1;
-      for (let r=ROWS-1;r>=0;r--){
-        if (grid[r][c].type){
-          if (r!==w){ grid[w][c]=grid[r][c]; grid[r][c]=empty(); }
-          w--;
-        }
-      }
-    }
-  }
-
-  function drawBlob(x,y,size,type, scale=1, alpha=1, shakeX=0, shakeY=0){
+  // 描画
+  function drawBlob(x, y, size, type, alpha = 1, shakeX = 0, shakeY = 0, scale = 1) {
     ctx.save();
     ctx.globalAlpha = alpha;
-    const cx = x + size/2 + shakeX, cy = y + size/2 + shakeY;
-    ctx.translate(cx, cy);
-    ctx.scale(scale, scale);
-    ctx.translate(-cx, -cy);
-    if (useImages){
-      const img = images[(type-1)%images.length];
-      ctx.drawImage(img, x+shakeX, y+shakeY, size, size);
-      ctx.restore();
-      return;
+    
+    const cx = x + size / 2 + shakeX;
+    const cy = y + size / 2 + shakeY;
+    
+    if (scale !== 1) {
+      ctx.translate(cx, cy);
+      ctx.scale(scale, scale);
+      ctx.translate(-cx, -cy);
     }
-    const r=size*0.45;
-    const grad = ctx.createRadialGradient(cx-r*0.4, cy-r*0.4, r*0.2, cx, cy, r);
-    const base = COLORS[(type-1)%COLORS.length];
+    
+    const r = size * 0.45;
+    
+    const grad = ctx.createRadialGradient(
+      cx - r * 0.4, cy - r * 0.4, r * 0.2,
+      cx, cy, r
+    );
+    const base = COLORS[(type - 1) % COLORS.length];
     grad.addColorStop(0, '#ffffff');
     grad.addColorStop(0.15, base);
     grad.addColorStop(1, '#333');
+    
     ctx.fillStyle = grad;
     ctx.beginPath();
-    ctx.arc(cx, cy, r, 0, Math.PI*2);
+    ctx.arc(cx, cy, r, 0, Math.PI * 2);
     ctx.fill();
-    ctx.fillStyle = 'rgba(255,255,255,0.85)';
+    
+    ctx.fillStyle = 'rgba(255,255,255,0.6)';
     ctx.beginPath();
-    ctx.arc(cx+r*0.45, cy+r*0.1, r*0.18, 0, Math.PI*2);
+    ctx.arc(cx + r * 0.3, cy - r * 0.2, r * 0.15, 0, Math.PI * 2);
     ctx.fill();
+    
     ctx.restore();
   }
 
-  function drawParticles(){
-    for (const p of particles){
-      const a = 1 - (p.life / p.max);
-      const s = 0.5 + 0.7*a;
-      const size = Math.max(10, TILE*0.5*s);
+  function drawParticles() {
+    for (const p of particles) {
+      const alpha = Math.max(0, 1 - (p.life / p.maxLife));
+      const size = p.size * alpha;
+      
       ctx.save();
-      ctx.globalAlpha = Math.max(0, a);
-      ctx.fillStyle = COLORS[(p.type-1)%COLORS.length];
+      ctx.globalAlpha = alpha;
+      ctx.fillStyle = COLORS[(p.type - 1) % COLORS.length];
       ctx.beginPath();
-      ctx.arc(p.x, p.y, size*0.12, 0, Math.PI*2);
+      ctx.arc(p.x, p.y, size * 0.15, 0, Math.PI * 2);
       ctx.fill();
       ctx.restore();
     }
   }
 
-  let dropTimer = 0;
-  function update(dt){
-    if (keys['ArrowLeft']){ move(-1); keys['ArrowLeft']=false; }
-    if (keys['ArrowRight']){ move(1); keys['ArrowRight']=false; }
-    if (keys['ArrowDown']){ sDrop(); keys['ArrowDown']=false; }
-    if (keys['ArrowUp']){ rot(1); keys['ArrowUp']=false; }
-    if (keys['Space']){ hDrop(); keys['Space']=false; }
-    if (keys['KeyR']){ restart(); keys['KeyR']=false; }
-
-    updParticles(dt);
-
-    if (resolving){
-      if (phase===0){ scan(); return; }
-      timer += dt;
-      if (phase===1){ if (timer >= 120){ phase = 2; timer = 0; } return; }
-      if (phase===2){ if (timer >= 220){ clearAndFall(); phase = 0; timer = 0; } return; }
-    } else {
-      dropTimer += dt;
-      const fallInt = Math.max(150, 800 - Math.floor(score/200)*30);
-      if (dropTimer >= fallInt){
-        dropTimer = 0;
-        if (falling){
-          if (can(falling, 0, 1)) falling.cy += 1;
-          else lock();
-        }
+  function draw() {
+    if (!gameStarted) return;
+    
+    ctx.fillStyle = '#0f1220';
+    ctx.fillRect(0, 0, W, H);
+    
+    for (let r = 0; r < ROWS; r++) {
+      for (let c = 0; c < COLS; c++) {
+        ctx.fillStyle = 'rgba(255,255,255,0.03)';
+        ctx.fillRect(PX + c * TILE + 1, PY + r * TILE + 1, TILE - 2, TILE - 2);
       }
     }
-  }
-
-  function draw(){
-    ctx.fillStyle = '#0f1220'; ctx.fillRect(0,0,W,H);
-    for (let r=0;r<ROWS;r++){
-      for (let c=0;c<COLS;c++){
+    
+    for (let r = 0; r < ROWS; r++) {
+      for (let c = 0; c < COLS; c++) {
         const cell = grid[r][c];
-        if (cell.type){
-          let scale=1, alpha=1, sx=0, sy=0;
-          if (cell.mark){
-            if (phase===1){
-              const amp = TILE*0.06;
-              const t = (timer + cell.seed*13.37) * 0.05;
-              sx = Math.sin(t)*amp;
-              sy = Math.cos(t*1.3)*amp;
-            }
-            if (phase===2){
-              const p = Math.min(1, timer/220);
-              scale = 1 + 0.35*p;
-              alpha = 1 - 0.65*p;
+        if (cell.type) {
+          let alpha = 1, shakeX = 0, shakeY = 0, scale = 1;
+          
+          if (cell.mark) {
+            if (phase === 1) {
+              const amp = TILE * 0.1;
+              const t = (phaseTimer + cell.seed * 15) * 0.02;
+              shakeX = Math.sin(t) * amp;
+              shakeY = Math.cos(t * 1.3) * amp;
+            } else if (phase === 2) {
+              const progress = phaseTimer / 300;
+              scale = 1 + progress * 0.5;
+              alpha = 1 - progress * 0.8;
             }
           }
-          drawBlob(PX+c*TILE, PY+r*TILE, TILE, cell.type, scale, alpha, sx, sy);
-        } else {
-          ctx.fillStyle = 'rgba(255,255,255,0.04)';
-          ctx.fillRect(PX+c*TILE+1, PY*r*TILE+1, TILE-2, TILE-2);
+          
+          drawBlob(PX + c * TILE, PY + r * TILE, TILE, cell.type, alpha, shakeX, shakeY, scale);
         }
       }
     }
-    if (falling){
-      for (const b of falling.blocks){
-        const x = falling.cx + b.dx, y = falling.cy + b.dy;
-        if (y>=0) drawBlob(PX+x*TILE, PY+y*TILE, TILE, b.type);
+    
+    if (falling) {
+      for (const block of falling.blocks) {
+        const x = falling.cx + block.dx;
+        const y = falling.cy + block.dy;
+        if (y >= 0) {
+          drawBlob(PX + x * TILE, PY + y * TILE, TILE, block.type);
+        }
       }
     }
-    ctx.strokeStyle = 'rgba(255,255,255,.2)'; ctx.lineWidth = 2;
-    ctx.strokeRect(PX-2, PY-2, COLS*TILE+4, ROWS*TILE+4);
+    
+    ctx.strokeStyle = 'rgba(255,255,255,0.2)';
+    ctx.lineWidth = 2;
+    ctx.strokeRect(PX - 1, PY - 1, COLS * TILE + 2, ROWS * TILE + 2);
+    
     drawParticles();
   }
 
-  function loop(now){
-    const dt = now - (loop.last||now); loop.last = now;
-    update(dt); draw();
+  // 更新
+  function update(dt) {
+    if (!gameStarted || gameOver) return;
+
+    updateParticles(dt);
+
+    if (resolving) {
+      processResolving();
+      return;
+    }
+
+    dropTimer += dt;
+    const fallInterval = Math.max(150, 800 - Math.floor(score / 200) * 30);
+    
+    if (dropTimer >= fallInterval) {
+      dropTimer = 0;
+      if (falling) {
+        softDrop();
+      }
+    }
+
+    if (timeMode) {
+      timeLeft -= dt;
+      if (timeLeft <= 0) {
+        gameOverNow('時間切れ…');
+        return;
+      }
+      timeEl.textContent = Math.max(0, Math.ceil(timeLeft / 1000));
+    }
+  }
+
+  // メインループ
+  function loop(now) {
+    const dt = now - (loop.last || now);
+    loop.last = now;
+    
+    update(dt);
+    draw();
+    
     requestAnimationFrame(loop);
   }
-  restart();
-  requestAnimationFrame(loop);
+
+  // キーボード操作
+  const keys = {};
+  window.addEventListener('keydown', e => {
+    keys[e.code] = true;
+    if (['ArrowUp', 'Space', 'KeyR'].includes(e.code)) {
+      e.preventDefault();
+    }
+  });
+  
+  window.addEventListener('keyup', e => {
+    if (keys[e.code]) {
+      keys[e.code] = false;
+      
+      if (e.code === 'ArrowLeft') moveLeft();
+      if (e.code === 'ArrowRight') moveRight();
+      if (e.code === 'ArrowDown') softDrop();
+      if (e.code === 'ArrowUp') rotate();
+      if (e.code === 'Space') hardDrop();
+      if (e.code === 'KeyR') restart();
+    }
+  });
+
+  // ボタン操作
+  function bindButton(id, fn, repeat = true) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    
+    let timer;
+    
+    const press = () => {
+      fn();
+      if (repeat) {
+        timer = setInterval(fn, 120);
+      }
+    };
+    
+    const release = () => {
+      clearInterval(timer);
+    };
+    
+    el.addEventListener('touchstart', e => {
+      e.preventDefault();
+      press();
+    });
+    
+    el.addEventListener('touchend', e => {
+      e.preventDefault();
+      release();
+    });
+    
+    el.addEventListener('mousedown', press);
+    el.addEventListener('mouseup', release);
+    el.addEventListener('mouseleave', release);
+  }
+
+  bindButton('left', moveLeft);
+  bindButton('right', moveRight);
+  bindButton('down', softDrop);
+  bindButton('rotL', rotate);
+  bindButton('rotR', rotate);
+  bindButton('drop', hardDrop, false);
+
+  // 制限時間モード切替
+  modeBtn.addEventListener('click', () => {
+    timeMode = !timeMode;
+    if (timeMode) {
+      timeLeft = 180000;
+      timeWrap.style.display = 'inline';
+      modeBtn.textContent = '制限時間:ON';
+    } else {
+      timeWrap.style.display = 'none';
+      modeBtn.textContent = '制限時間:OFF';
+    }
+  });
+
+  // スコア管理
+  function loadScores() {
+    try {
+      return JSON.parse(localStorage.getItem('ham_poyo_scores') || '[]');
+    } catch {
+      return [];
+    }
+  }
+
+  function saveScore(sc) {
+    const arr = loadScores();
+    arr.push({ s: sc, t: Date.now() });
+    arr.sort((a, b) => b.s - a.s);
+    const top = arr.slice(0, 3);
+    localStorage.setItem('ham_poyo_scores', JSON.stringify(top));
+    return top;
+  }
+
+  function showBest() {
+    const arr = loadScores();
+    const bestEls = [
+      document.getElementById('best1'),
+      document.getElementById('best2'),
+      document.getElementById('best3')
+    ];
+    bestEls.forEach((el, i) => {
+      el.textContent = arr[i] ? arr[i].s : '-';
+    });
+  }
+
+  // オーバーレイ
+  function showOverlay(title, msg) {
+    const overlay = document.getElementById('overlay');
+    const ovTitle = document.getElementById('ovTitle');
+    const ovMsg = document.getElementById('ovMsg');
+    
+    ovTitle.textContent = title;
+    ovMsg.textContent = msg;
+    showBest();
+    overlay.style.display = 'flex';
+  }
+
+  function hideOverlay() {
+    const overlay = document.getElementById('overlay');
+    overlay.style.display = 'none';
+  }
+
+  function gameOverNow(reason) {
+    gameOver = true;
+    saveScore(score);
+    showOverlay('Game Over', `${reason} スコア: ${score}`);
+  }
+
+  function clearNow() {
+    gameOver = true;
+    saveScore(score);
+    showOverlay('クリア！', `全部消しました！ スコア: ${score}`);
+  }
+
+  function backToStart() {
+    gameStarted = false;
+    gameArea.classList.remove('active');
+    startScreen.style.display = 'block';
+    hideOverlay();
+  }
+
+  // イベントリスナー
+  document.getElementById('retry').addEventListener('click', () => {
+    restart();
+  });
+  
+  document.getElementById('newGame').addEventListener('click', () => {
+    backToStart();
+  });
+  
+  document.getElementById('closeOv').addEventListener('click', () => {
+    backToStart();
+  });
+
+  document.getElementById('share').addEventListener('click', async () => {
+    const text = `スコア ${score} 点でクリア！\n遊んでみてね 👉 ${location.href}\n\n#はむちら #はむケツぽよぽよ`;
+    
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: document.title,
+          text,
+          url: location.href
+        });
+        return;
+      } catch (e) {
+        // フォールバック
+      }
+    }
+    
+    const alt = document.getElementById('shareAlt');
+    if (alt) {
+      alt.style.display = 'block';
+      alt.textContent = text + '\n（上の文をコピーしてSNSに貼り付けてください）';
+    }
+  });
+
+  // 初期化
+  fit();
 })();
 </script>
 </body>
