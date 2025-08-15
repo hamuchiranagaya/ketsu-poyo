@@ -135,9 +135,8 @@
     <div class="scores">ベスト: <span id="best1">-</span><span id="best2">-</span><span id="best3">-</span></div>
     <div class="row" style="margin-top:10px">
       <button id="retry">リトライ</button>
-      <button id="newGame">新しいゲーム</button>
-      <button id="share">シェア</button>
-      <button id="closeOv">閉じる</button>
+      <button id="giveUp">諦める</button>
+      <button id="shareResult">結果をXでシェア</button>
     </div>
     <div id="shareAlt" class="note" style="display:none;margin-top:8px"></div>
   </div>
@@ -304,18 +303,26 @@
     }
   });
 
-  // キャンバスサイズ調整
+  // キャンバスサイズ調整（PC・スマホ対応）
   function fit() {
     if (!gameStarted) return;
     
     const availableWidth = window.innerWidth - 16;
     const availableHeight = window.innerHeight - 280;
     
-    const scaleByWidth = availableWidth / W;
-    const scaleByHeight = availableHeight / H;
+    // PC用の最大サイズ制限
+    const maxWidth = 500; // PC用最大幅
+    const maxHeight = 800; // PC用最大高さ
+    
+    const scaleByWidth = Math.min(availableWidth, maxWidth) / W;
+    const scaleByHeight = Math.min(availableHeight, maxHeight) / H;
     const scale = Math.min(scaleByWidth, scaleByHeight);
     
-    const finalScale = Math.max(scale, availableWidth / W * 0.9);
+    // スマホでは画面幅の90%、PCでは適度なサイズに
+    const isSmallScreen = window.innerWidth <= 768;
+    const finalScale = isSmallScreen ? 
+      Math.max(scale, availableWidth / W * 0.9) : 
+      Math.max(scale, 0.8);
     
     canvas.style.width = (W * finalScale) + 'px';
     canvas.style.height = (H * finalScale) + 'px';
@@ -461,6 +468,7 @@
 
   // ピース固定
   function lockPiece() {
+    // 各ブロックを個別に配置（ペアの連結を完全に解除）
     for (const block of falling.blocks) {
       const x = falling.cx + block.dx;
       const y = falling.cy + block.dy;
@@ -470,7 +478,12 @@
         return;
       }
       
-      grid[y][x] = { type: block.type, mark: false, seed: Math.random() * 1000 };
+      // 完全に独立したブロックとして配置
+      grid[y][x] = { 
+        type: block.type, 
+        mark: false, 
+        seed: Math.random() * 1000 // 各ブロック独自のseed
+      };
     }
     
     falling = null;
@@ -600,16 +613,20 @@
     }
   }
 
-  // ブロック落下（重力処理）- アニメーション対応
+  // ブロック落下（重力処理）- 個別ブロック対応
   function dropBlocks() {
     let hasMoved = false;
     
-    // 下から上に向かって、空きがあれば1段階ずつ落とす
+    // 各ブロックを個別に処理（ペアの連結を解除）
     for (let c = 0; c < COLS; c++) {
       for (let r = ROWS - 2; r >= 0; r--) { // 最下段は除く
         if (grid[r][c].type !== 0 && grid[r + 1][c].type === 0) {
-          // 1つ下に落とす
-          grid[r + 1][c] = { ...grid[r][c] };
+          // 1つ下に落とす（個別のブロックとして）
+          grid[r + 1][c] = { 
+            type: grid[r][c].type, 
+            mark: false, 
+            seed: Math.random() * 1000 // 新しいseedで個別化
+          };
           grid[r][c] = empty();
           hasMoved = true;
         }
@@ -962,35 +979,14 @@
     restart();
   });
   
-  document.getElementById('newGame').addEventListener('click', () => {
-    backToStart();
-  });
-  
-  document.getElementById('closeOv').addEventListener('click', () => {
+  document.getElementById('giveUp').addEventListener('click', () => {
     backToStart();
   });
 
-  document.getElementById('share').addEventListener('click', async () => {
-    const text = `スコア ${score} 点でクリア！\n遊んでみてね 👉 ${location.href}\n\n#はむちら #はむケツぽよぽよ`;
-    
-    if (navigator.share) {
-      try {
-        await navigator.share({
-          title: document.title,
-          text,
-          url: location.href
-        });
-        return;
-      } catch (e) {
-        // フォールバック
-      }
-    }
-    
-    const alt = document.getElementById('shareAlt');
-    if (alt) {
-      alt.style.display = 'block';
-      alt.textContent = text + '\n（上の文をコピーしてSNSに貼り付けてください）';
-    }
+  document.getElementById('shareResult').addEventListener('click', async () => {
+    const text = encodeURIComponent(`はむケツぽよぽよでスコア ${score} 点を記録！🐹✨\nはむケツを4個以上つなげて、ぷるぷる消すパズルゲーム\n\n#はむチラ #はむケツぽよぽよ`);
+    const url = encodeURIComponent('https://hamuchiranagaya.github.io/ketsu-poyo/');
+    window.open(`https://twitter.com/intent/tweet?text=${text}&url=${url}`, '_blank');
   });
 
   // 初期化
