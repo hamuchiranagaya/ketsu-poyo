@@ -1,6 +1,4 @@
-    <button id="gameStartButton" class="start-btn">
-      ゲームスタート
-    </button><!doctype html>
+<!doctype html>
 <html lang="ja">
 <head>
   <meta charset="utf-8"/>
@@ -56,6 +54,64 @@ var STAGES = [
 var hamImages = [];
 var useImages = false;
 var loadedImages = 0;
+
+// 称号システム
+var TITLE_DATA = {
+  1: { title: "はむケツビギナー", condition_type: "default", condition_value: 0, description: "ゲームを始めた証", secret: false },
+  2: { title: "スコアマスター", condition_type: "score_over", condition_value: 1000, description: "1000点を超える", secret: false },
+  3: { title: "チェインマスター", condition_type: "chain", condition_value: 5, description: "5チェインを達成", secret: false },
+  4: { title: "図鑑コレクター", condition_type: "pokedex", condition_value: 5, description: "5体のはむケツを発見", secret: false },
+  5: { title: "図鑑マスター", condition_type: "pokedex_complete", condition_value: 24, description: "全24体のはむケツを発見", secret: false },
+  6: { title: "ゲーマー", condition_type: "games_played", condition_value: 10, description: "10回ゲームをプレイ", secret: false },
+  7: { title: "はむケツハンター", condition_type: "cleared_blocks", condition_value: 500, description: "500個のはむケツを消去", secret: false },
+  8: { title: "タイムマスター", condition_type: "time_mode_clear", condition_value: 1, description: "制限時間モードをクリア", secret: false },
+  // はむケツラバー称号（自動生成）
+  101: { title: "オレケツラバー", condition_type: "pokedex_unlock", condition_value: 1, description: "オレケツを発見した証", secret: false },
+  102: { title: "バインバインラバー", condition_type: "pokedex_unlock", condition_value: 2, description: "バインバインを発見した証", secret: false },
+  103: { title: "黄金比ケツラバー", condition_type: "pokedex_unlock", condition_value: 3, description: "黄金比ケツを発見した証", secret: false },
+  104: { title: "ふらケツラバー", condition_type: "pokedex_unlock", condition_value: 4, description: "ふらケツを発見した証", secret: false },
+  105: { title: "デリシャスケツラバー", condition_type: "pokedex_unlock", condition_value: 5, description: "デリシャスケツを発見した証", secret: false },
+  106: { title: "やばケツラバー", condition_type: "pokedex_unlock", condition_value: 6, description: "やばケツを発見した証", secret: false },
+  107: { title: "ぱんケツラバー", condition_type: "pokedex_unlock", condition_value: 7, description: "ぱんケツを発見した証", secret: false }
+};
+
+var userStats = {
+  maxScore: 0,
+  maxChain: 0,
+  gamesPlayed: 0,
+  totalCleared: 0,
+  timeModeClears: 0,
+  selectedTitle: 1, // 選択中の称号ID
+  selectedIcon: 0   // 選択中のアイコン（0は初期状態）
+};
+
+// CSV読み込み関数（称号用）
+function loadTitleDataFromCSV(csvData) {
+  try {
+    var lines = csvData.split('\n');
+    var headers = lines[0].split(',').map(function(h) { return h.trim(); });
+    
+    for (var i = 1; i < lines.length; i++) {
+      if (lines[i].trim() === '') continue;
+      
+      var values = lines[i].split(',').map(function(v) { return v.trim(); });
+      var id = parseInt(values[0]);
+      
+      if (id && id >= 1) {
+        TITLE_DATA[id] = {
+          title: values[1] || '???',
+          condition_type: values[2] || 'default',
+          condition_value: parseInt(values[3]) || 0,
+          description: values[4] || '???を達成せよ',
+          secret: values[5] === 'true'
+        };
+      }
+    }
+    console.log('称号データ更新完了');
+  } catch (error) {
+    console.log('称号CSV読み込みエラー:', error);
+  }
+}
 
 // 図鑑データ（CSV形式対応）
 var POKEDEX_DATA = {
@@ -226,6 +282,23 @@ function showPokedexDetail(id) {
   
   if (!entry.discovered) return;
   
+  // 画像表示の決定（より確実な方法）
+  var imageDisplay = '';
+  var imageTypeIndex = ((id - 1) % 6); // 0-5の範囲
+  
+  console.log('図鑑詳細表示 - ID:', id, 'ステージ:', stageIndex, '画像インデックス:', imageTypeIndex);
+  console.log('useImages:', useImages, 'hamImages[' + imageTypeIndex + ']:', hamImages[imageTypeIndex]);
+  
+  if (useImages && hamImages[imageTypeIndex] && hamImages[imageTypeIndex].complete && hamImages[imageTypeIndex].naturalWidth > 0) {
+    // 画像が正常に読み込まれている場合
+    imageDisplay = '<img src="' + hamImages[imageTypeIndex].src + '" style="width: 80px; height: 80px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.3);" alt="' + data.name + '">';
+    console.log('画像表示使用:', hamImages[imageTypeIndex].src);
+  } else {
+    // フォールバック：アイコン表示
+    imageDisplay = '<div style="width: 80px; height: 80px; border-radius: 12px; background: linear-gradient(135deg, #4facfe, #00f2fe); display: flex; align-items: center; justify-content: center; font-size: 40px; box-shadow: 0 4px 12px rgba(0,0,0,0.3);">' + stageIcons[stageIndex] + '</div>';
+    console.log('アイコン表示使用:', stageIcons[stageIndex]);
+  }
+  
   // 詳細画面を作成
   var detailScreen = document.createElement('div');
   detailScreen.className = 'overlay';
@@ -236,11 +309,7 @@ function showPokedexDetail(id) {
     '<div class="card" style="max-width: 480px; text-align: center;">' +
       '<div style="position: relative;">' +
         '<button onclick="this.parentElement.parentElement.parentElement.remove()" style="position: absolute; top: -10px; right: -10px; background: rgba(255,255,255,0.8); border: none; border-radius: 50%; width: 30px; height: 30px; cursor: pointer; font-size: 16px; color: #333;">×</button>' +
-        '<div style="font-size: 64px; margin: 20px 0;">' + 
-        (useImages && hamImages[((id-1) % 6)] && hamImages[((id-1) % 6)].complete ? 
-          '<img src="' + hamImages[((id-1) % 6)].src + '" style="width: 80px; height: 80px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.3);">' : 
-          stageIcons[stageIndex]) + 
-        '</div>' +
+        '<div style="font-size: 64px; margin: 20px 0;">' + imageDisplay + '</div>' +
         '<h3 style="margin: 16px 0; font-size: 24px;">' + data.name + '</h3>' +
         '<div style="background: rgba(255,255,255,0.2); border-radius: 12px; padding: 16px; margin: 16px 0; backdrop-filter: blur(10px);">' +
           '<div style="font-size: 14px; margin: 8px 0;"><strong>📱 持ち主:</strong> ' + data.owner + '</div>' +
@@ -331,6 +400,427 @@ function shareResult() {
   var text = encodeURIComponent('はむケツぽよぽよでスコア ' + score + ' 点を記録！🐹✨\nはむケツを4個以上つなげて、ぷるぷる消すパズルゲーム\n\n#はむチラ #はむケツぽよぽよ');
   var url = encodeURIComponent('https://hamuchiranagaya.github.io/ketsu-poyo/');
   window.open('https://twitter.com/intent/tweet?text=' + text + '&url=' + url, '_blank');
+}
+
+// 称号システム関数
+function loadUserStats() {
+  try {
+    if (typeof(Storage) !== "undefined" && localStorage) {
+      var saved = localStorage.getItem('ham_poyo_user_stats');
+      if (saved) {
+        var loaded = JSON.parse(saved);
+        userStats = Object.assign(userStats, loaded);
+        console.log('ユーザー統計を読み込みました:', userStats);
+      }
+    }
+  } catch (error) {
+    console.log('ユーザー統計読み込みエラー:', error);
+  }
+  
+  // デフォルト称号を確実に取得済みにする
+  if (!hasTitleUnlocked(1)) {
+    unlockTitle(1);
+  }
+}
+
+function saveUserStats() {
+  try {
+    if (typeof(Storage) !== "undefined" && localStorage) {
+      localStorage.setItem('ham_poyo_user_stats', JSON.stringify(userStats));
+      console.log('ユーザー統計を保存しました:', userStats);
+    }
+  } catch (error) {
+    console.log('ユーザー統計保存エラー:', error);
+  }
+}
+
+function updateStats(newScore, newChain, blocksCleared, isTimeMode) {
+  console.log('統計更新開始 - スコア:', newScore, 'チェイン:', newChain);
+  
+  // 統計更新
+  if (newScore > userStats.maxScore) {
+    userStats.maxScore = newScore;
+    console.log('最高スコア更新:', newScore);
+  }
+  if (newChain > userStats.maxChain) {
+    userStats.maxChain = newChain;
+    console.log('最高チェイン更新:', newChain);
+  }
+  userStats.gamesPlayed++;
+  userStats.totalCleared += blocksCleared || 0;
+  
+  if (isTimeMode && !gameOver) {
+    userStats.timeModeClears++;
+  }
+  
+  console.log('更新後の統計:', userStats);
+  
+  // 称号チェック
+  checkAndUnlockTitles();
+  saveUserStats();
+}
+
+function checkAndUnlockTitles() {
+  var pokedexStats = getPokedexStats();
+  
+  Object.keys(TITLE_DATA).forEach(function(id) {
+    var titleId = parseInt(id);
+    var titleData = TITLE_DATA[titleId];
+    
+    if (hasTitleUnlocked(titleId)) return;
+    
+    var unlocked = false;
+    
+    switch (titleData.condition_type) {
+      case 'default':
+        unlocked = true;
+        break;
+      case 'score_over':
+        unlocked = userStats.maxScore >= titleData.condition_value;
+        break;
+      case 'chain':
+        unlocked = userStats.maxChain >= titleData.condition_value;
+        break;
+      case 'games_played':
+        unlocked = userStats.gamesPlayed >= titleData.condition_value;
+        break;
+      case 'pokedex':
+        unlocked = pokedexStats.discovered >= titleData.condition_value;
+        break;
+      case 'pokedex_complete':
+        unlocked = pokedexStats.discovered >= 24;
+        break;
+      case 'cleared_blocks':
+        unlocked = userStats.totalCleared >= titleData.condition_value;
+        break;
+      case 'time_mode_clear':
+        unlocked = userStats.timeModeClears >= titleData.condition_value;
+        break;
+      case 'pokedex_unlock':
+        // 特定のはむケツが発見されているかチェック
+        var pokedex = loadPokedex();
+        var entry = pokedex['type_' + titleData.condition_value];
+        unlocked = entry && entry.discovered;
+        break;
+    }
+    
+    if (unlocked) {
+      unlockTitle(titleId);
+    }
+  });
+}
+
+// はむケツラバー称号の自動生成
+function generateRubberTitles() {
+  // 8番以降の未定義はむケツ用の称号を自動生成
+  for (var i = 8; i <= 24; i++) {
+    var titleId = 100 + i;
+    if (!TITLE_DATA[titleId]) {
+      var data = POKEDEX_DATA[i];
+      if (data && data.name && data.name !== '???') {
+        TITLE_DATA[titleId] = {
+          title: data.name + "ラバー",
+          condition_type: "pokedex_unlock",
+          condition_value: i,
+          description: data.name + "を発見した証",
+          secret: false
+        };
+      }
+    }
+  }
+}
+
+function hasTitleUnlocked(titleId) {
+  try {
+    var unlockedTitles = JSON.parse(localStorage.getItem('ham_poyo_unlocked_titles') || '[]');
+    return unlockedTitles.includes(titleId);
+  } catch (error) {
+    return false;
+  }
+}
+
+function unlockTitle(titleId) {
+  try {
+    var unlockedTitles = JSON.parse(localStorage.getItem('ham_poyo_unlocked_titles') || '[]');
+    if (!unlockedTitles.includes(titleId)) {
+      unlockedTitles.push(titleId);
+      localStorage.setItem('ham_poyo_unlocked_titles', JSON.stringify(unlockedTitles));
+      
+      // 称号取得通知
+      var titleData = TITLE_DATA[titleId];
+      if (titleData && titleId !== 1) { // 初期称号以外は通知
+        setTimeout(function() {
+          alert('🏆 新しい称号を獲得しました！\n\n「' + titleData.title + '」\n' + titleData.description);
+        }, 1000);
+      }
+    }
+  } catch (error) {
+    console.log('称号解放エラー:', error);
+  }
+}
+
+function getSelectedTitleName() {
+  var titleData = TITLE_DATA[userStats.selectedTitle];
+  return titleData ? titleData.title : 'はむケツビギナー';
+}
+
+function showMyPage() {
+  console.log('マイページを表示');
+  
+  var myPageScreen = document.createElement('div');
+  myPageScreen.className = 'overlay';
+  myPageScreen.style.display = 'flex';
+  myPageScreen.style.zIndex = '1001';
+  
+  var bestScores = loadScores();
+  var selectedIcon = userStats.selectedIcon;
+  var iconDisplay = '';
+  
+  if (selectedIcon > 0 && selectedIcon <= 24) {
+    var pokedex = loadPokedex();
+    var entry = pokedex['type_' + selectedIcon];
+    if (entry && entry.discovered) {
+      var stageIndex = Math.floor((selectedIcon - 1) / 6);
+      var stageIcons = ['🌸', '🌻', '🍂', '❄️'];
+      if (useImages && hamImages[((selectedIcon-1) % 6)] && hamImages[((selectedIcon-1) % 6)].complete) {
+        iconDisplay = '<img src="' + hamImages[((selectedIcon-1) % 6)].src + '" style="width: 80px; height: 80px; border-radius: 50%; box-shadow: 0 4px 12px rgba(0,0,0,0.3);">';
+      } else {
+        iconDisplay = '<div style="width: 80px; height: 80px; border-radius: 50%; background: linear-gradient(135deg, #4facfe, #00f2fe); display: flex; align-items: center; justify-content: center; font-size: 40px; box-shadow: 0 4px 12px rgba(0,0,0,0.3);">' + stageIcons[stageIndex] + '</div>';
+      }
+    }
+  }
+  
+  if (!iconDisplay) {
+    iconDisplay = '<div style="width: 80px; height: 80px; border-radius: 50%; background: linear-gradient(135deg, #ccc, #999); display: flex; align-items: center; justify-content: center; font-size: 14px; color: #666; box-shadow: 0 4px 12px rgba(0,0,0,0.3);">No Image</div>';
+  }
+  
+  myPageScreen.innerHTML = 
+    '<div class="card" style="max-width: 400px; text-align: center;">' +
+      '<button onclick="this.parentElement.parentElement.remove()" style="position: absolute; top: 10px; right: 15px; background: rgba(255,255,255,0.8); border: none; border-radius: 50%; width: 30px; height: 30px; cursor: pointer; font-size: 16px; color: #333;">×</button>' +
+      '<h3 style="margin: 16px 0;">📄 マイページ</h3>' +
+      '<div style="margin: 20px 0;">' + iconDisplay + '</div>' +
+      '<div style="background: rgba(255,255,255,0.2); border-radius: 12px; padding: 12px; margin: 16px 0;">' +
+        '<div style="font-size: 18px; font-weight: bold; color: #ffeb3b;">「' + getSelectedTitleName() + '」</div>' +
+      '</div>' +
+      '<div style="background: rgba(255,255,255,0.2); border-radius: 12px; padding: 16px; margin: 16px 0;">' +
+        '<div style="font-size: 16px; font-weight: bold; margin-bottom: 8px;">🏆 ベストスコア</div>' +
+        '<div style="font-size: 14px;" id="mypage-best1">1位: ' + (bestScores[0] ? bestScores[0].s : '-') + '</div>' +
+        '<div style="font-size: 14px;" id="mypage-best2">2位: ' + (bestScores[1] ? bestScores[1].s : '-') + '</div>' +
+        '<div style="font-size: 14px;" id="mypage-best3">3位: ' + (bestScores[2] ? bestScores[2].s : '-') + '</div>' +
+      '</div>' +
+      '<div style="background: rgba(255,255,255,0.2); border-radius: 12px; padding: 16px; margin: 16px 0;">' +
+        '<div style="font-size: 16px; font-weight: bold; margin-bottom: 8px;">📊 統計情報</div>' +
+        '<div style="font-size: 12px; margin: 4px 0;">🎮 プレイ回数: ' + userStats.gamesPlayed + '</div>' +
+        '<div style="font-size: 12px; margin: 4px 0;">⚡ 最高チェイン: ' + userStats.maxChain + '</div>' +
+        '<div style="font-size: 12px; margin: 4px 0;">💥 消去総数: ' + userStats.totalCleared + '</div>' +
+      '</div>' +
+      '<div class="row" style="margin-top: 20px; gap: 8px;">' +
+        '<button onclick="showTitleList()" style="flex: 1;">🏆 称号変更</button>' +
+        '<button onclick="showIconSelect()" style="flex: 1;">🖼️ アイコン変更</button>' +
+      '</div>' +
+      '<div class="row" style="margin-top: 12px; gap: 8px;">' +
+        '<button onclick="shareMyPage(\'x\')" style="flex: 1; background: linear-gradient(135deg, #000, #333); color: white; border-radius: 20px; padding: 10px 16px; font-size: 14px;">Xでシェア</button>' +
+        '<button onclick="shareMyPage(\'line\')" style="flex: 1; background: linear-gradient(135deg, #00C300, #00B900); color: white; border-radius: 20px; padding: 10px 16px; font-size: 14px;">LINEでシェア</button>' +
+      '</div>' +
+    '</div>';
+  
+  document.body.appendChild(myPageScreen);
+}
+
+function showTitleList() {
+  // 現在のマイページを閉じる
+  var existingPages = document.querySelectorAll('.overlay');
+  existingPages.forEach(function(page) { page.remove(); });
+  
+  var titleListScreen = document.createElement('div');
+  titleListScreen.className = 'overlay';
+  titleListScreen.style.display = 'flex';
+  titleListScreen.style.zIndex = '1001';
+  
+  var titleListHTML = '';
+  Object.keys(TITLE_DATA).forEach(function(id) {
+    var titleId = parseInt(id);
+    var titleData = TITLE_DATA[titleId];
+    var unlocked = hasTitleUnlocked(titleId);
+    var isSelected = userStats.selectedTitle === titleId;
+    
+    var displayTitle = titleData.title;
+    var displayDesc = titleData.description;
+    
+    if (!unlocked && titleData.secret) {
+      displayTitle = '???';
+      displayDesc = '???を達成せよ';
+    }
+    
+    var progress = '';
+    if (!unlocked) {
+      var current = 0;
+      var pokedexStats = getPokedexStats();
+      
+      switch (titleData.condition_type) {
+        case 'score_over':
+          current = userStats.maxScore;
+          break;
+        case 'chain':
+          current = userStats.maxChain;
+          break;
+        case 'games_played':
+          current = userStats.gamesPlayed;
+          break;
+        case 'pokedex':
+          current = pokedexStats.discovered;
+          break;
+        case 'cleared_blocks':
+          current = userStats.totalCleared;
+          break;
+        case 'time_mode_clear':
+          current = userStats.timeModeClears;
+          break;
+      }
+      progress = ' (' + current + '/' + titleData.condition_value + ')';
+    }
+    
+    titleListHTML += 
+      '<div style="background: ' + (unlocked ? (isSelected ? 'linear-gradient(135deg, #ffeb3b, #ffc107)' : 'rgba(255,255,255,0.2)') : 'rgba(255,255,255,0.1)') + '; border-radius: 8px; padding: 12px; margin: 8px 0; border: 2px solid ' + (isSelected ? '#ffeb3b' : 'transparent') + ';">' +
+        '<div style="display: flex; align-items: center; gap: 8px;">' +
+          '<span style="font-size: 16px;">' + (unlocked ? (isSelected ? '👑' : '✅') : '❓') + '</span>' +
+          '<div style="flex: 1; text-align: left;">' +
+            '<div style="font-weight: bold; font-size: 14px;">' + displayTitle + progress + '</div>' +
+            '<div style="font-size: 12px; opacity: 0.8;">' + displayDesc + '</div>' +
+          '</div>' +
+          (unlocked ? '<button onclick="selectTitle(' + titleId + ')" style="background: linear-gradient(135deg, #4facfe, #00f2fe); border: none; border-radius: 6px; padding: 4px 8px; color: white; font-size: 12px; cursor: pointer;">' + (isSelected ? '装備中' : '装備') + '</button>' : '') +
+        '</div>' +
+      '</div>';
+  });
+  
+  titleListScreen.innerHTML = 
+    '<div class="card" style="max-width: 500px; max-height: 80vh; overflow-y: auto;">' +
+      '<button onclick="this.parentElement.parentElement.remove()" style="position: absolute; top: 10px; right: 15px; background: rgba(255,255,255,0.8); border: none; border-radius: 50%; width: 30px; height: 30px; cursor: pointer; font-size: 16px; color: #333;">×</button>' +
+      '<h3 style="margin: 16px 0;">🏆 称号一覧</h3>' +
+      '<div style="margin: 20px 0;">' + titleListHTML + '</div>' +
+      '<div class="row" style="margin-top: 20px;">' +
+        '<button onclick="this.parentElement.parentElement.parentElement.remove(); showMyPage();" style="background: linear-gradient(135deg, #ff6b6b, #ff8e8e);">戻る</button>' +
+      '</div>' +
+    '</div>';
+  
+  document.body.appendChild(titleListScreen);
+}
+
+function selectTitle(titleId) {
+  userStats.selectedTitle = titleId;
+  saveUserStats();
+  
+  // 称号一覧を再表示
+  showTitleList();
+}
+
+function showIconSelect() {
+  // 現在のマイページを閉じる
+  var existingPages = document.querySelectorAll('.overlay');
+  existingPages.forEach(function(page) { page.remove(); });
+  
+  var iconSelectScreen = document.createElement('div');
+  iconSelectScreen.className = 'overlay';
+  iconSelectScreen.style.display = 'flex';
+  iconSelectScreen.style.zIndex = '1001';
+  
+  var pokedex = loadPokedex();
+  var stageNames = ['春のケツ', '夏のケツ', '秋のケツ', '冬のケツ'];
+  var stageIcons = ['🌸', '🌻', '🍂', '❄️'];
+  
+  var iconListHTML = '';
+  
+  // デフォルトアイコン
+  iconListHTML += 
+    '<div onclick="selectIcon(0)" style="display: inline-block; margin: 8px; cursor: pointer; text-align: center; border: 3px solid ' + (userStats.selectedIcon === 0 ? '#ffeb3b' : 'transparent') + '; border-radius: 12px; padding: 8px;">' +
+      '<div style="width: 60px; height: 60px; border-radius: 50%; background: linear-gradient(135deg, #ccc, #999); display: flex; align-items: center; justify-content: center; font-size: 12px; color: #666; margin: 0 auto 4px auto;">No Image</div>' +
+      '<div style="font-size: 10px;">デフォルト</div>' +
+    '</div>';
+  
+  // 発見済みはむケツ
+  for (var i = 1; i <= 24; i++) {
+    var key = 'type_' + i;
+    var entry = pokedex[key] || { count: 0, discovered: false };
+    
+    if (entry.discovered) {
+      var stageIndex = Math.floor((i - 1) / 6);
+      var data = POKEDEX_DATA[i];
+      var isSelected = userStats.selectedIcon === i;
+      
+      var iconDisplay = '';
+      if (useImages && hamImages[((i-1) % 6)] && hamImages[((i-1) % 6)].complete) {
+        iconDisplay = '<img src="' + hamImages[((i-1) % 6)].src + '" style="width: 60px; height: 60px; border-radius: 50%;">';
+      } else {
+        iconDisplay = '<div style="width: 60px; height: 60px; border-radius: 50%; background: linear-gradient(135deg, #4facfe, #00f2fe); display: flex; align-items: center; justify-content: center; font-size: 30px;">' + stageIcons[stageIndex] + '</div>';
+      }
+      
+      iconListHTML += 
+        '<div onclick="selectIcon(' + i + ')" style="display: inline-block; margin: 8px; cursor: pointer; text-align: center; border: 3px solid ' + (isSelected ? '#ffeb3b' : 'transparent') + '; border-radius: 12px; padding: 8px;">' +
+          iconDisplay +
+          '<div style="font-size: 10px; margin-top: 4px;">' + data.name + '</div>' +
+        '</div>';
+    }
+  }
+  
+  iconSelectScreen.innerHTML = 
+    '<div class="card" style="max-width: 500px; max-height: 80vh; overflow-y: auto;">' +
+      '<button onclick="this.parentElement.parentElement.remove()" style="position: absolute; top: 10px; right: 15px; background: rgba(255,255,255,0.8); border: none; border-radius: 50%; width: 30px; height: 30px; cursor: pointer; font-size: 16px; color: #333;">×</button>' +
+      '<h3 style="margin: 16px 0;">🖼️ アイコン選択</h3>' +
+      '<p style="font-size: 12px; opacity: 0.8;">発見済みのはむケツから選択できます</p>' +
+      '<div style="margin: 20px 0; display: flex; flex-wrap: wrap; justify-content: center;">' + iconListHTML + '</div>' +
+      '<div class="row" style="margin-top: 20px;">' +
+        '<button onclick="this.parentElement.parentElement.parentElement.remove(); showMyPage();" style="background: linear-gradient(135deg, #ff6b6b, #ff8e8e);">戻る</button>' +
+      '</div>' +
+    '</div>';
+  
+  document.body.appendChild(iconSelectScreen);
+}
+
+function selectIcon(iconId) {
+  userStats.selectedIcon = iconId;
+  saveUserStats();
+  
+  // アイコン選択画面を再表示
+  showIconSelect();
+}
+
+// マイページシェア機能
+function shareMyPage(platform) {
+  console.log('📤 マイページシェア:', platform);
+  
+  try {
+    var bestScores = loadScores();
+    var currentTitle = getSelectedTitleName();
+    var bestScore = bestScores[0] ? bestScores[0].s : 0;
+    
+    // シェアテキスト作成
+    var shareText = 
+      '称号「' + currentTitle + '」\n' +
+      'ベストスコア: ' + bestScore + '点\n\n' +
+      'はむケツを集めてぷるぷる消すゲーム🎮\n' +
+      'はむケツぽよぽよ、ぜひ遊んでみてね！\n' +
+      '#ハムスター #はむチラ #はむケツぽよぽよ';
+    
+    var gameUrl = 'https://hamuchiranagaya.github.io/ketsu-poyo/';
+    
+    if (platform === 'x') {
+      // X (Twitter) でシェア
+      var tweetText = encodeURIComponent(shareText);
+      var tweetUrl = encodeURIComponent(gameUrl);
+      var xUrl = 'https://twitter.com/intent/tweet?text=' + tweetText + '&url=' + tweetUrl;
+      window.open(xUrl, '_blank');
+      
+    } else if (platform === 'line') {
+      // LINE でシェア
+      var lineText = encodeURIComponent(shareText + '\n' + gameUrl);
+      var lineUrl = 'https://social-plugins.line.me/lineit/share?url=' + encodeURIComponent(gameUrl) + '&text=' + lineText;
+      window.open(lineUrl, '_blank');
+    }
+    
+  } catch (error) {
+    console.error('❌ シェアエラー:', error);
+    alert('シェアに失敗しました。もう一度お試しください。');
+  }
 }
 
 // 操作関数
@@ -425,23 +915,41 @@ function initGame() {
 function loadStageImages(stageIndex) {
   console.log('ステージ ' + STAGES[stageIndex].name + ' の画像を読み込み中...');
   var stage = STAGES[stageIndex];
+  
+  // 画像読み込み状態をリセット
   useImages = false;
   loadedImages = 0;
+  
+  // 新しい画像配列を作成
+  hamImages = Array.from({length: TYPES}, function() { return new Image(); });
 
   hamImages.forEach(function(img, i) {
     var imageNumber = stage.range[0] + i;
+    var imagePath = 'assets/ham_' + String(imageNumber).padStart(2, '0') + '.png';
+    
+    // 画像読み込み成功時
     img.onload = function() {
       loadedImages++;
-      console.log('はむケツ画像 ' + (i + 1) + '/6 読み込み完了: assets/ham_' + String(imageNumber).padStart(2, '0') + '.png');
+      console.log('はむケツ画像 ' + (i + 1) + '/6 読み込み完了: ' + imagePath);
       if (loadedImages === TYPES) {
         useImages = true;
         console.log(stage.name + 'の全画像読み込み完了！');
       }
     };
+    
+    // 画像読み込み失敗時
     img.onerror = function() {
-      console.log('はむケツ画像が見つかりません: assets/ham_' + String(imageNumber).padStart(2, '0') + '.png（カラー円で代用）');
+      console.log('はむケツ画像が見つかりません: ' + imagePath + '（カラー円で代用）');
+      loadedImages++;
+      // 失敗してもカウントを進めて、他の画像読み込みを阻害しない
+      if (loadedImages === TYPES) {
+        console.log('画像読み込み処理完了（一部失敗含む）');
+      }
     };
-    img.src = 'assets/ham_' + String(imageNumber).padStart(2, '0') + '.png';
+    
+    // 画像のsrcを設定（読み込み開始）
+    img.src = imagePath;
+    console.log('画像読み込み開始:', imagePath);
   });
 }
 
@@ -790,32 +1298,52 @@ function drawBlob(x, y, size, type, alpha, shakeX, shakeY, scale) {
     ctx.translate(-cx, -cy);
   }
   
-  if (useImages && hamImages[type - 1] && hamImages[type - 1].complete) {
-    ctx.drawImage(hamImages[type - 1], x + shakeX, y + shakeY, size, size);
+  // 画像表示の判定を厳密にする
+  var imageIndex = type - 1; // 1-6 → 0-5
+  var canUseImage = useImages && 
+                   hamImages[imageIndex] && 
+                   hamImages[imageIndex].complete && 
+                   hamImages[imageIndex].naturalWidth > 0 &&
+                   hamImages[imageIndex].naturalHeight > 0;
+  
+  if (canUseImage) {
+    try {
+      ctx.drawImage(hamImages[imageIndex], x + shakeX, y + shakeY, size, size);
+    } catch (drawError) {
+      console.log('画像描画エラー、フォールバック:', drawError);
+      // エラー時はカラー円にフォールバック
+      drawColorCircle(cx, cy, size, type);
+    }
   } else {
-    var r = size * 0.45;
-    
-    var grad = ctx.createRadialGradient(
-      cx - r * 0.4, cy - r * 0.4, r * 0.2,
-      cx, cy, r
-    );
-    var base = COLORS[(type - 1) % COLORS.length];
-    grad.addColorStop(0, '#ffffff');
-    grad.addColorStop(0.15, base);
-    grad.addColorStop(1, '#333');
-    
-    ctx.fillStyle = grad;
-    ctx.beginPath();
-    ctx.arc(cx, cy, r, 0, Math.PI * 2);
-    ctx.fill();
-    
-    ctx.fillStyle = 'rgba(255,255,255,0.6)';
-    ctx.beginPath();
-    ctx.arc(cx + r * 0.3, cy - r * 0.2, r * 0.15, 0, Math.PI * 2);
-    ctx.fill();
+    // カラー円で描画
+    drawColorCircle(cx, cy, size, type);
   }
   
   ctx.restore();
+}
+
+// カラー円描画の分離関数
+function drawColorCircle(cx, cy, size, type) {
+  var r = size * 0.45;
+  
+  var grad = ctx.createRadialGradient(
+    cx - r * 0.4, cy - r * 0.4, r * 0.2,
+    cx, cy, r
+  );
+  var base = COLORS[(type - 1) % COLORS.length];
+  grad.addColorStop(0, '#ffffff');
+  grad.addColorStop(0.15, base);
+  grad.addColorStop(1, '#333');
+  
+  ctx.fillStyle = grad;
+  ctx.beginPath();
+  ctx.arc(cx, cy, r, 0, Math.PI * 2);
+  ctx.fill();
+  
+  ctx.fillStyle = 'rgba(255,255,255,0.6)';
+  ctx.beginPath();
+  ctx.arc(cx + r * 0.3, cy - r * 0.2, r * 0.15, 0, Math.PI * 2);
+  ctx.fill();
 }
 
 function drawParticles() {
@@ -941,35 +1469,126 @@ function gameLoop() {
 }
 
 function gameOverNow(reason) {
-  console.log('ゲームオーバー発生:', reason);
+  console.log('💀 ゲームオーバー発生:', reason, 'スコア:', score);
   gameOver = true;
   
-  saveScore(score);
-  
+  // まず画面表示を最優先（スコア保存でエラーが出ても画面は出す）
   setTimeout(function() {
-    showGameOverlay('🐹 Game Over 🐹', reason + ' スコア: ' + score);
+    console.log('🎬 ゲームオーバー画面表示開始');
+    try {
+      showGameOverlay('🐹 Game Over 🐹', reason + ' スコア: ' + score);
+      console.log('🎬 ゲームオーバー画面表示完了');
+    } catch (displayError) {
+      console.error('❌ 画面表示エラー:', displayError);
+      // フォールバック：alertで表示
+      alert('Game Over\n' + reason + '\nスコア: ' + score);
+    }
   }, 100);
+  
+  // スコア保存は別途実行（エラーが出ても画面表示に影響しない）
+  setTimeout(function() {
+    console.log('💾 スコア保存開始...');
+    try {
+      var savedScores = saveScore(score);
+      console.log('💾 スコア保存完了:', savedScores);
+      
+      // 統計更新
+      updateStats(score, chain, 0, timeMode);
+      
+      // ベストスコア表示更新
+      showBest();
+      
+    } catch (saveError) {
+      console.error('❌ スコア保存エラー（ゲーム続行）:', saveError);
+    }
+  }, 200);
 }
 
 function clearNow() {
-  console.log('全クリア発生');
+  console.log('🎉 全クリア発生! スコア:', score);
   gameOver = true;
-  saveScore(score);
   
-  showGameOverlay('🎉 おめでとう！ 🎉', '全部消しました！ スコア: ' + score);
+  // まず画面表示を最優先
+  setTimeout(function() {
+    console.log('🎬 クリア画面表示開始');
+    try {
+      showGameOverlay('🎉 おめでとう！ 🎉', '全部消しました！ スコア: ' + score);
+      console.log('🎬 クリア画面表示完了');
+    } catch (displayError) {
+      console.error('❌ 画面表示エラー:', displayError);
+      // フォールバック：alertで表示
+      alert('おめでとう！\n全部消しました！\nスコア: ' + score);
+    }
+  }, 100);
+  
+  // スコア保存は別途実行
+  setTimeout(function() {
+    console.log('💾 クリア時スコア保存開始...');
+    try {
+      var savedScores = saveScore(score);
+      console.log('💾 スコア保存完了:', savedScores);
+      
+      // 統計更新（クリア時）
+      updateStats(score, chain, 0, timeMode);
+      
+      // ベストスコア表示更新
+      showBest();
+      
+    } catch (saveError) {
+      console.error('❌ スコア保存エラー（ゲーム続行）:', saveError);
+    }
+  }, 200);
 }
 
 function showGameOverlay(title, message) {
-  var overlay = document.getElementById('gameOverlay');
-  var ovTitle = document.getElementById('ovTitle');
-  var ovMsg = document.getElementById('ovMsg');
+  console.log('🎭 showGameOverlay 開始:', title, message);
   
-  if (overlay && ovTitle && ovMsg) {
-    ovTitle.textContent = title;
-    ovMsg.textContent = message;
-    showBest();
-    overlay.style.display = 'flex';
-    console.log('ゲーム結果画面を表示しました');
+  try {
+    var overlay = document.getElementById('gameOverlay');
+    var ovTitle = document.getElementById('ovTitle');
+    var ovMsg = document.getElementById('ovMsg');
+    
+    console.log('🎭 要素取得:', {
+      overlay: overlay ? 'OK' : 'NULL',
+      ovTitle: ovTitle ? 'OK' : 'NULL', 
+      ovMsg: ovMsg ? 'OK' : 'NULL'
+    });
+    
+    if (overlay && ovTitle && ovMsg) {
+      ovTitle.textContent = title;
+      ovMsg.textContent = message;
+      console.log('🎭 テキスト設定完了');
+      
+      // ベストスコア表示（エラーが出ても続行）
+      try {
+        showBest();
+        console.log('🎭 ベストスコア表示完了');
+      } catch (bestError) {
+        console.error('⚠️ ベストスコア表示エラー:', bestError);
+      }
+      
+      overlay.style.display = 'flex';
+      console.log('🎭 オーバーレイ表示完了');
+      
+    } else {
+      console.error('❌ 必要な要素が見つかりません');
+      console.error('overlay:', overlay);
+      console.error('ovTitle:', ovTitle);
+      console.error('ovMsg:', ovMsg);
+      
+      // フォールバック：alertで表示
+      alert(title + '\n' + message);
+    }
+    
+  } catch (error) {
+    console.error('❌ showGameOverlay エラー:', error);
+    
+    // 最終フォールバック
+    try {
+      alert(title + '\n' + message);
+    } catch (alertError) {
+      console.error('❌ アラート表示もエラー:', alertError);
+    }
   }
 }
 
@@ -984,7 +1603,10 @@ function hideGameOverlay() {
 function loadPokedex() {
   try {
     if (typeof(Storage) !== "undefined" && localStorage) {
-      return JSON.parse(localStorage.getItem('ham_poyo_pokedex') || '{}');
+      var data = localStorage.getItem('ham_poyo_pokedex');
+      if (data) {
+        return JSON.parse(data);
+      }
     }
   } catch (error) {
     console.log('loadPokedex error:', error);
@@ -996,6 +1618,7 @@ function savePokedex(pokedex) {
   try {
     if (typeof(Storage) !== "undefined" && localStorage) {
       localStorage.setItem('ham_poyo_pokedex', JSON.stringify(pokedex));
+      console.log('図鑑データ保存完了');
     }
   } catch (error) {
     console.log('savePokedex error:', error);
@@ -1056,49 +1679,277 @@ function updatePokedexCount() {
   }
 }
 
-// スコアシステム
+// スコアシステム（エラー完全修正版）
 function loadScores() {
+  console.log('📊 loadScores 開始');
+  
   try {
-    if (typeof(Storage) !== "undefined" && localStorage) {
-      return JSON.parse(localStorage.getItem('ham_poyo_scores') || '[]');
+    // ローカルストレージ利用可能性チェック
+    if (typeof Storage === "undefined" || !localStorage) {
+      console.log('❌ ローカルストレージ利用不可');
+      return [];
+    }
+    
+    // 複数のキーで試行
+    var keys = ['ham_poyo_scores', 'hamketsu_scores', 'game_scores'];
+    
+    for (var i = 0; i < keys.length; i++) {
+      try {
+        console.log('🔍 キー確認:', keys[i]);
+        var data = localStorage.getItem(keys[i]);
+        console.log('📥 取得データ:', data, '(型:', typeof data, ')');
+        
+        if (data !== null && data !== undefined && data !== '' && data !== 'null') {
+          try {
+            var parsed = JSON.parse(data);
+            console.log('✅ JSON解析成功:', parsed);
+            
+            // 配列かどうか確認
+            if (Array.isArray(parsed)) {
+              console.log('✅ 有効な配列データを発見');
+              return parsed;
+            } else {
+              console.log('⚠️ 配列ではないデータ:', parsed);
+            }
+          } catch (parseError) {
+            console.log('❌ JSON解析エラー:', parseError.message);
+          }
+        } else {
+          console.log('❌ 無効なデータ:', data);
+        }
+      } catch (keyError) {
+        console.log('❌ キー取得エラー:', keyError.message);
+      }
     }
   } catch (error) {
-    console.log('loadScores error:', error);
+    console.log('❌ loadScores 全体エラー:', error.message);
   }
+  
+  console.log('📊 スコアデータなし、空配列を返します');
   return [];
 }
 
 function saveScore(score) {
-  try {
-    if (typeof(Storage) !== "undefined" && localStorage) {
-      var arr = loadScores();
-      arr.push({ s: score, t: Date.now() });
-      arr.sort(function(a, b) { return b.s - a.s; });
-      var top = arr.slice(0, 3);
-      localStorage.setItem('ham_poyo_scores', JSON.stringify(top));
-      return top;
-    }
-  } catch (error) {
-    console.log('saveScore error:', error);
+  console.log('🎯 スコア保存開始 - スコア:', score);
+  
+  // スコア妥当性チェック
+  if (!score || typeof score !== 'number' || score <= 0 || isNaN(score)) {
+    console.log('❌ 無効なスコア:', score);
+    return [];
   }
-  return [{ s: score, t: Date.now() }];
+  
+  try {
+    // ローカルストレージテスト
+    var testKey = 'test_' + Date.now();
+    var testValue = JSON.stringify({test: true});
+    
+    try {
+      localStorage.setItem(testKey, testValue);
+      var testResult = localStorage.getItem(testKey);
+      localStorage.removeItem(testKey);
+      
+      if (testResult !== testValue) {
+        console.error('❌ ローカルストレージテスト失敗');
+        return [{ s: score, t: Date.now() }];
+      }
+      console.log('✅ ローカルストレージテスト成功');
+    } catch (testError) {
+      console.error('❌ ローカルストレージアクセスエラー:', testError.message);
+      return [{ s: score, t: Date.now() }];
+    }
+    
+    // 既存スコアの安全な読み込み
+    var existingScores = [];
+    try {
+      existingScores = loadScores();
+      console.log('📊 既存スコア読み込み成功:', existingScores);
+    } catch (loadError) {
+      console.log('⚠️ 既存スコア読み込み失敗、新規作成:', loadError.message);
+      existingScores = [];
+    }
+    
+    // 新しいスコアエントリ作成
+    var newScoreEntry = { 
+      s: parseInt(score), 
+      t: Date.now(),
+      id: 'score_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5)
+    };
+    console.log('📝 新スコアエントリ作成:', newScoreEntry);
+    
+    // 配列操作
+    var allScores = [];
+    if (Array.isArray(existingScores)) {
+      allScores = existingScores.slice(); // 安全なコピー
+    }
+    allScores.push(newScoreEntry);
+    console.log('📊 スコア追加後:', allScores);
+    
+    // ソート（エラーハンドリング付き）
+    try {
+      allScores.sort(function(a, b) { 
+        var scoreA = (a && typeof a.s === 'number') ? a.s : 0;
+        var scoreB = (b && typeof b.s === 'number') ? b.s : 0;
+        return scoreB - scoreA; 
+      });
+      console.log('📊 ソート完了:', allScores);
+    } catch (sortError) {
+      console.log('⚠️ ソートエラー:', sortError.message);
+      allScores = [newScoreEntry]; // フォールバック
+    }
+    
+    // トップ3のみ保持
+    var topScores = allScores.slice(0, 3);
+    console.log('🏆 トップ3:', topScores);
+    
+    // JSON文字列化（安全版）
+    var jsonString;
+    try {
+      jsonString = JSON.stringify(topScores);
+      console.log('📝 JSON化成功:', jsonString);
+    } catch (stringifyError) {
+      console.error('❌ JSON化エラー:', stringifyError.message);
+      return [newScoreEntry];
+    }
+    
+    // 保存実行（複数キー）
+    var saveKeys = ['ham_poyo_scores', 'hamketsu_scores'];
+    var saveSuccess = false;
+    
+    for (var i = 0; i < saveKeys.length; i++) {
+      try {
+        localStorage.setItem(saveKeys[i], jsonString);
+        
+        // 保存確認
+        var verification = localStorage.getItem(saveKeys[i]);
+        if (verification === jsonString) {
+          console.log('✅ 保存成功 (キー:', saveKeys[i], ')');
+          saveSuccess = true;
+        } else {
+          console.log('❌ 保存検証失敗 (キー:', saveKeys[i], ')');
+        }
+      } catch (saveError) {
+        console.log('❌ 保存エラー (キー:', saveKeys[i], '):', saveError.message);
+      }
+    }
+    
+    if (saveSuccess) {
+      console.log('🎉 スコア保存完了!');
+      
+      // 統計更新
+      try {
+        if (score > userStats.maxScore) {
+          userStats.maxScore = score;
+          saveUserStats();
+          console.log('📈 最高スコア更新:', score);
+        }
+      } catch (statsError) {
+        console.log('⚠️ 統計更新エラー:', statsError.message);
+      }
+      
+      return topScores;
+    } else {
+      console.error('❌ 全保存試行失敗');
+      return [newScoreEntry];
+    }
+    
+  } catch (error) {
+    console.error('🚨 saveScore 致命的エラー:', error.message, error.stack);
+    return [{ s: score, t: Date.now() }];
+  }
 }
 
 function showBest() {
+  console.log('🏆 showBest 開始');
+  
   try {
     var arr = loadScores();
+    console.log('📊 ロードしたスコア:', arr);
+    
     var bestEls = [
       document.getElementById('best1'),
       document.getElementById('best2'),
       document.getElementById('best3')
     ];
-    bestEls.forEach(function(el, i) {
+    
+    console.log('📋 ベストスコア要素取得:', bestEls.map(function(el, i) { 
+      return 'best' + (i+1) + ': ' + (el ? 'OK' : 'NULL'); 
+    }));
+    
+    for (var i = 0; i < bestEls.length; i++) {
+      var el = bestEls[i];
       if (el) {
-        el.textContent = arr[i] ? arr[i].s : '-';
+        var scoreData = arr[i];
+        var displayScore = '-';
+        
+        if (scoreData && typeof scoreData === 'object' && typeof scoreData.s === 'number') {
+          displayScore = scoreData.s;
+        }
+        
+        el.textContent = displayScore;
+        console.log('✏️ ベストスコア' + (i+1) + '位 設定:', displayScore);
+      } else {
+        console.log('❌ ベストスコア要素' + (i+1) + 'が見つかりません');
+      }
+    }
+    
+    // マイページのスコア表示も更新
+    updateMyPageScores();
+    
+  } catch (error) {
+    console.error('❌ showBest エラー:', error.message);
+    
+    // エラー時のフォールバック表示
+    try {
+      var fallbackEls = [
+        document.getElementById('best1'),
+        document.getElementById('best2'),
+        document.getElementById('best3')
+      ];
+      
+      fallbackEls.forEach(function(el, i) {
+        if (el) {
+          el.textContent = '-';
+        }
+      });
+    } catch (fallbackError) {
+      console.error('❌ フォールバック表示もエラー:', fallbackError.message);
+    }
+  }
+}
+
+function updateMyPageScores() {
+  try {
+    // マイページが開いている場合、そのスコア表示も更新
+    var myPageElements = document.querySelectorAll('.overlay .card');
+    myPageElements.forEach(function(card) {
+      if (card && card.innerHTML && card.innerHTML.includes('マイページ')) {
+        var scores = loadScores();
+        
+        // IDベースで要素を探す
+        var scoreEls = [
+          card.querySelector('#mypage-best1'),
+          card.querySelector('#mypage-best2'),
+          card.querySelector('#mypage-best3')
+        ];
+        
+        scoreEls.forEach(function(el, i) {
+          if (el) {
+            var scoreData = scores[i];
+            var displayText = (i+1) + '位: ';
+            
+            if (scoreData && typeof scoreData === 'object' && typeof scoreData.s === 'number') {
+              displayText += scoreData.s;
+            } else {
+              displayText += '-';
+            }
+            
+            el.textContent = displayText;
+          }
+        });
       }
     });
   } catch (error) {
-    console.log('showBest error:', error);
+    console.log('⚠️ マイページスコア更新エラー:', error.message);
   }
 }
 
@@ -1128,13 +1979,230 @@ window.addEventListener('keyup', function(e) {
 // リサイズ
 window.addEventListener('resize', fit);
 
-// 初期化処理
+// デバッグ機能追加（強化版）
+function debugLocalStorage() {
+  var debugInfo = [];
+  
+  try {
+    debugInfo.push('=== ローカルストレージ診断 ===');
+    debugInfo.push('日時: ' + new Date().toLocaleString());
+    debugInfo.push('');
+    
+    // 基本チェック
+    var storageAvailable = typeof Storage !== "undefined" && localStorage;
+    debugInfo.push('✓ Storage利用可能: ' + (storageAvailable ? 'Yes' : 'No'));
+    
+    if (!storageAvailable) {
+      debugInfo.push('❌ ローカルストレージが利用できません');
+      alert(debugInfo.join('\n'));
+      return;
+    }
+    
+    // ストレージ容量テスト
+    try {
+      var testData = JSON.stringify({test: 'data', number: 123, array: [1,2,3]});
+      var testKey = 'capacity_test_' + Date.now();
+      localStorage.setItem(testKey, testData);
+      var retrieved = localStorage.getItem(testKey);
+      localStorage.removeItem(testKey);
+      debugInfo.push('✓ 基本読み書き: ' + (retrieved === testData ? 'OK' : 'NG'));
+    } catch (e) {
+      debugInfo.push('❌ 基本読み書きエラー: ' + e.message);
+    }
+    
+    debugInfo.push('');
+    debugInfo.push('=== 現在の保存状況 ===');
+    
+    // 全キー表示
+    var allKeys = [];
+    try {
+      for (var i = 0; i < localStorage.length; i++) {
+        allKeys.push(localStorage.key(i));
+      }
+      debugInfo.push('保存済みキー数: ' + allKeys.length);
+      debugInfo.push('キー一覧: ' + allKeys.join(', '));
+    } catch (e) {
+      debugInfo.push('❌ キー取得エラー: ' + e.message);
+    }
+    
+    debugInfo.push('');
+    
+    // スコア関連キーの詳細チェック
+    var scoreKeys = ['ham_poyo_scores', 'hamketsu_scores'];
+    scoreKeys.forEach(function(key) {
+      try {
+        var rawData = localStorage.getItem(key);
+        debugInfo.push('--- ' + key + ' ---');
+        debugInfo.push('生データ: ' + (rawData || '(null)'));
+        debugInfo.push('データ型: ' + typeof rawData);
+        debugInfo.push('長さ: ' + (rawData ? rawData.length : 0));
+        
+        if (rawData && rawData !== 'null') {
+          try {
+            var parsed = JSON.parse(rawData);
+            debugInfo.push('JSON解析: 成功');
+            debugInfo.push('解析結果型: ' + typeof parsed);
+            debugInfo.push('配列判定: ' + Array.isArray(parsed));
+            if (Array.isArray(parsed)) {
+              debugInfo.push('配列長: ' + parsed.length);
+              debugInfo.push('内容: ' + JSON.stringify(parsed));
+            }
+          } catch (parseErr) {
+            debugInfo.push('JSON解析: 失敗 - ' + parseErr.message);
+          }
+        }
+        debugInfo.push('');
+      } catch (keyErr) {
+        debugInfo.push('❌ ' + key + ' チェックエラー: ' + keyErr.message);
+      }
+    });
+    
+    // 現在のゲーム状態
+    debugInfo.push('=== 現在のゲーム状態 ===');
+    debugInfo.push('現在スコア: ' + score);
+    debugInfo.push('ゲーム中: ' + gameStarted);
+    debugInfo.push('ゲームオーバー: ' + gameOver);
+    
+    // loadScores()の実行テスト
+    debugInfo.push('');
+    debugInfo.push('=== loadScores()テスト ===');
+    try {
+      var testScores = loadScores();
+      debugInfo.push('実行結果: 成功');
+      debugInfo.push('戻り値型: ' + typeof testScores);
+      debugInfo.push('配列判定: ' + Array.isArray(testScores));
+      debugInfo.push('内容: ' + JSON.stringify(testScores));
+    } catch (loadErr) {
+      debugInfo.push('実行結果: エラー - ' + loadErr.message);
+    }
+    
+    // 統計情報
+    debugInfo.push('');
+    debugInfo.push('=== 統計情報 ===');
+    debugInfo.push('最高スコア: ' + userStats.maxScore);
+    debugInfo.push('プレイ回数: ' + userStats.gamesPlayed);
+    debugInfo.push('最高チェイン: ' + userStats.maxChain);
+    
+  } catch (error) {
+    debugInfo.push('❌ 診断中にエラー: ' + error.message);
+    debugInfo.push('スタック: ' + error.stack);
+  }
+  
+  // 結果表示
+  var result = debugInfo.join('\n');
+  console.log('🔍 デバッグ結果:\n' + result);
+  alert(result);
+  
+  return result;
+}
+
+// 手動スコア保存機能（デバッグ用）
+function manualScoreSave() {
+  var testScore = prompt('テストスコアを入力してください:', '999');
+  if (testScore && !isNaN(testScore)) {
+    testScore = parseInt(testScore);
+    console.log('🧪 手動スコア保存テスト開始:', testScore);
+    var result = saveScore(testScore);
+    console.log('🧪 手動保存結果:', result);
+    showBest();
+    alert('テストスコア ' + testScore + ' を保存しました。\n結果: ' + JSON.stringify(result));
+  } else {
+    alert('無効なスコアです');
+  }
+}
+
+// スコアリセット機能
+function resetAllScores() {
+  if (confirm('すべてのスコアをリセットしますか？')) {
+    try {
+      localStorage.removeItem('ham_poyo_scores');
+      localStorage.removeItem('hamketsu_scores');
+      localStorage.removeItem('game_scores');
+      console.log('🗑️ スコアリセット完了');
+      showBest();
+      alert('スコアをリセットしました');
+    } catch (error) {
+      alert('リセットエラー: ' + error.message);
+    }
+  }
+}
+// 簡易版スコア保存（フォールバック用）
+function saveScoreSimple(score) {
+  console.log('🔄 簡易版スコア保存開始:', score);
+  
+  try {
+    if (!score || score <= 0) {
+      console.log('❌ 無効なスコア');
+      return [];
+    }
+    
+    // 最もシンプルな保存方法
+    var key = 'simple_scores';
+    var newScore = { s: parseInt(score), t: Date.now() };
+    
+    // 既存データ取得（エラー時は空配列）
+    var existing = [];
+    try {
+      var data = localStorage.getItem(key);
+      if (data && data !== 'null') {
+        existing = JSON.parse(data) || [];
+      }
+    } catch (e) {
+      console.log('既存データ読み込み失敗、新規作成');
+      existing = [];
+    }
+    
+    // 配列確認
+    if (!Array.isArray(existing)) {
+      existing = [];
+    }
+    
+    // 追加
+    existing.push(newScore);
+    
+    // ソート
+    existing.sort(function(a, b) { return (b.s || 0) - (a.s || 0); });
+    
+    // トップ3
+    var top3 = existing.slice(0, 3);
+    
+    // 保存
+    localStorage.setItem(key, JSON.stringify(top3));
+    
+    console.log('✅ 簡易版保存完了:', top3);
+    return top3;
+    
+  } catch (error) {
+    console.error('❌ 簡易版保存もエラー:', error);
+    return [{ s: score, t: Date.now() }];
+  }
+}
 window.addEventListener('load', function() {
-  console.log('ページ読み込み完了');
+  console.log('🚀 ページ読み込み完了');
   console.log('startGame関数の確認:', typeof startGame);
   console.log('selectStage関数の確認:', typeof selectStage);
   console.log('showPokedex関数の確認:', typeof showPokedex);
+  
+  // ラバー称号の自動生成
+  generateRubberTitles();
+  
+  // ユーザー統計とポケデックス初期化
+  loadUserStats();
   updatePokedexCount();
+  
+  // スコア読み込みテスト
+  console.log('📊 初期スコア確認:', loadScores());
+  
+  // デバッグ: ローカルストレージの状態確認
+  console.log('🔍 ローカルストレージ利用可能:', typeof Storage !== "undefined" && localStorage);
+  if (typeof Storage !== "undefined" && localStorage) {
+    console.log('🔍 現在のストレージキー数:', localStorage.length);
+    var keys = [];
+    for (var i = 0; i < localStorage.length; i++) {
+      keys.push(localStorage.key(i));
+    }
+    console.log('🔍 現在のキー:', keys);
+  }
   
   // ゲームスタートボタンのイベントリスナー追加
   var gameStartBtn = document.getElementById('gameStartButton');
@@ -1147,6 +2215,19 @@ window.addEventListener('load', function() {
   } else {
     console.error('ゲームスタートボタンが見つかりません');
   }
+  
+  // デバッグ用ショートカット（開発中のみ）
+  window.debugGame = {
+    saveTestScore: function(score) { return saveScore(score || 500); },
+    showScores: function() { console.log(loadScores()); },
+    clearScores: function() { 
+      localStorage.removeItem('ham_poyo_scores');
+      localStorage.removeItem('hamketsu_scores');
+      console.log('スコアクリア完了');
+    }
+  };
+  
+  console.log('🎮 デバッグ機能: window.debugGame で利用可能');
 });
 
 console.log('全関数定義完了');
@@ -1299,6 +2380,11 @@ console.log('全関数定義完了');
       📖 図鑑を見る (<span id="pokedexCount">0/24</span>)
     </button>
     
+    <!-- マイページボタン -->
+    <button class="start-btn" onclick="showMyPage()" style="font-size: 16px; padding: 12px 24px; margin: 10px 0; background: linear-gradient(135deg, #ff6b6b, #ff8e8e);">
+      📄 マイページ
+    </button>
+    
     <a href="https://youtube.com/@hamuchira" target="_blank" class="youtube-link">
       🎬 もっと！はむチラ長屋ch.
     </a>
@@ -1376,3 +2462,4 @@ console.log('全関数定義完了');
 </div>
 </body>
 </html>
+      
