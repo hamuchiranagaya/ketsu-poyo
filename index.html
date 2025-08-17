@@ -61,13 +61,16 @@ var loadedImages = 0;
 // 称号システム
 var TITLE_DATA = {
   1: { title: "はむケツビギナー", condition_type: "default", condition_value: 0, description: "ゲームを始めた証", secret: false },
-  2: { title: "スコアマスター", condition_type: "score_over", condition_value: 1000, description: "1000点を超える", secret: false },
-  3: { title: "チェインマスター", condition_type: "chain", condition_value: 5, description: "5チェインを達成", secret: false },
-  4: { title: "図鑑コレクター", condition_type: "pokedex", condition_value: 5, description: "5体のはむケツを発見", secret: false },
-  5: { title: "図鑑マスター", condition_type: "pokedex_complete", condition_value: 24, description: "全24体のはむケツを発見", secret: false },
-  6: { title: "ゲーマー", condition_type: "games_played", condition_value: 10, description: "10回ゲームをプレイ", secret: false },
-  7: { title: "はむケツハンター", condition_type: "cleared_blocks", condition_value: 500, description: "500個のはむケツを消去", secret: false },
-  8: { title: "タイムマスター", condition_type: "time_mode_clear", condition_value: 1, description: "制限時間モードをクリア", secret: false },
+  2: { title: "スコア達人", condition_type: "score_over", condition_value: 5000, description: "5000点を超える", secret: false },
+  3: { title: "スコアマスター", condition_type: "score_over", condition_value: 10000, description: "10000点を超える", secret: false },
+  4: { title: "スコアキング", condition_type: "score_over", condition_value: 15000, description: "15000点を超える", secret: false },
+  5: { title: "スコアレジェンド", condition_type: "score_over", condition_value: 20000, description: "20000点を超える", secret: false },
+  6: { title: "チェインマスター", condition_type: "chain", condition_value: 5, description: "5チェインを達成", secret: false },
+  7: { title: "図鑑コレクター", condition_type: "pokedex", condition_value: 5, description: "5体のはむケツを発見", secret: false },
+  8: { title: "図鑑マスター", condition_type: "pokedex_complete", condition_value: 24, description: "全24体のはむケツを発見", secret: false },
+  9: { title: "ゲーマー", condition_type: "games_played", condition_value: 10, description: "10回ゲームをプレイ", secret: false },
+  10: { title: "はむケツハンター", condition_type: "cleared_blocks", condition_value: 500, description: "500個のはむケツを消去", secret: false },
+  11: { title: "タイムマスター", condition_type: "time_mode_clear", condition_value: 1, description: "制限時間モードをクリア", secret: false },
   // はむケツラバー称号（自動生成）
   101: { title: "オレケツラバー", condition_type: "pokedex_unlock", condition_value: 1, description: "オレケツを発見した証", secret: false },
   102: { title: "バインバインラバー", condition_type: "pokedex_unlock", condition_value: 2, description: "バインバインを発見した証", secret: false },
@@ -225,11 +228,24 @@ function startGame() {
 }
 
 function showPokedex() {
-  console.log('図鑑を表示');
+  console.log('📖 図鑑を表示');
+  
+  // 既に図鑑が開いている場合は閉じる
+  var existingPokedex = document.getElementById('pokedexScreen');
+  if (existingPokedex && existingPokedex.style.display === 'flex') {
+    existingPokedex.style.display = 'none';
+    return;
+  }
+  
   var pokedexScreen = document.getElementById('pokedexScreen');
   var pokedexGrid = document.getElementById('pokedexGrid');
-  var pokedex = loadPokedex();
   
+  if (!pokedexScreen || !pokedexGrid) {
+    console.error('図鑑要素が見つかりません');
+    return;
+  }
+  
+  var pokedex = loadPokedex();
   pokedexGrid.innerHTML = '';
   
   var stageNames = ['春のケツ', '夏のケツ', '秋のケツ', '冬のケツ'];
@@ -243,24 +259,35 @@ function showPokedex() {
     
     var entryDiv = document.createElement('div');
     entryDiv.className = 'pokedex-entry ' + (entry.discovered ? 'discovered' : 'undiscovered');
-    entryDiv.onclick = entry.discovered ? (function(index) {
-      return function() { showPokedexDetail(index); };
-    })(i) : null;
-    entryDiv.style.cursor = entry.discovered ? 'pointer' : 'default';
+    
+    // クリックイベントの安全な設定
+    if (entry.discovered) {
+      entryDiv.setAttribute('data-id', i);
+      entryDiv.style.cursor = 'pointer';
+      entryDiv.onclick = function() {
+        var id = parseInt(this.getAttribute('data-id'));
+        showPokedexDetail(id);
+      };
+    } else {
+      entryDiv.style.cursor = 'default';
+      entryDiv.onclick = null;
+    }
     
     if (entry.discovered) {
-      // 発見済みの場合
+      // 画像表示の安定化
       var imageDisplay = '';
-      var imageTypeIndex = ((i - 1) % 6); // 0-5の範囲
+      var imageTypeIndex = ((i - 1) % 6);
       
-      console.log('図鑑エントリ' + i + ' - 画像インデックス:', imageTypeIndex, 'useImages:', useImages);
-      
-      // 画像が利用可能かチェック（より緩い条件）
-      if (useImages && hamImages[imageTypeIndex] && hamImages[imageTypeIndex].src) {
+      // 画像が利用可能かより厳密にチェック
+      if (imageLoadStatus.loaded && 
+          hamImages && 
+          hamImages[imageTypeIndex] && 
+          hamImages[imageTypeIndex] !== null &&
+          hamImages[imageTypeIndex].complete &&
+          hamImages[imageTypeIndex].src) {
         imageDisplay = '<img src="' + hamImages[imageTypeIndex].src + '" style="width: 40px; height: 40px; border-radius: 8px;" onerror="this.style.display=\'none\'; this.nextElementSibling.style.display=\'block\';">' +
                       '<div style="font-size: 32px; display: none;">' + stageIcons[stageIndex] + '</div>';
       } else {
-        // フォールバック：ステージアイコン
         imageDisplay = '<div style="font-size: 32px;">' + stageIcons[stageIndex] + '</div>';
       }
       
@@ -271,10 +298,9 @@ function showPokedex() {
         '<div style="font-weight: bold; font-size: 10px; margin: 4px 0;">No.' + String(i).padStart(2, '0') + '</div>' +
         '<div style="font-weight: bold; font-size: 12px; margin: 2px 0; color: #ffeb3b;">' + data.name + '</div>' +
         '<div style="font-size: 10px; opacity: 0.8; margin: 2px 0;">' + data.owner + '</div>' +
-        '<div style="font-size: 9px; margin-top: 4px; color: #4fc3f7;">消去数: ' + entry.count + '</div>' +
+        '<div style="font-size: 9px; margin-top: 4px; color: #FFD700; background: rgba(0,0,0,0.7); padding: 2px 6px; border-radius: 8px; font-weight: bold;">消去数: ' + entry.count + '</div>' +
         '<div style="font-size: 8px; margin-top: 2px; opacity: 0.6;">クリックで詳細</div>';
     } else {
-      // 未発見の場合
       entryDiv.innerHTML = 
         '<div style="font-size: 32px; margin-bottom: 8px; height: 40px; display: flex; align-items: center; justify-content: center;">❓</div>' +
         '<div style="font-weight: bold; font-size: 10px; margin: 4px 0;">No.' + String(i).padStart(2, '0') + '</div>' +
@@ -287,6 +313,7 @@ function showPokedex() {
   }
   
   pokedexScreen.style.display = 'flex';
+  console.log('✅ 図鑑表示完了');
 }
 
 function showPokedexDetail(id) {
@@ -299,12 +326,24 @@ function showPokedexDetail(id) {
   
   if (!entry.discovered) return;
   
-  // 画像表示の完全修正版
+  // 画像表示の安定化
   var imageDisplay = '';
-  console.log('図鑑詳細 - ID:', id, 'ステージ:', stageIndex);
+  var imageTypeIndex = ((id - 1) % 6);
   
-  // ステージアイコンを確実に表示（画像は後で追加）
-  imageDisplay = '<div style="width: 80px; height: 80px; border-radius: 12px; background: linear-gradient(135deg, #4facfe, #00f2fe); display: flex; align-items: center; justify-content: center; font-size: 40px; box-shadow: 0 4px 12px rgba(0,0,0,0.3); color: white;">' + stageIcons[stageIndex] + '</div>';
+  console.log('📋 図鑑詳細 - ID:', id, 'ステージ:', stageIndex, '画像状態:', imageLoadStatus.loaded);
+  
+  // 図鑑一覧と同じ条件で画像表示
+  if (imageLoadStatus.loaded && 
+      hamImages && 
+      hamImages[imageTypeIndex] && 
+      hamImages[imageTypeIndex] !== null &&
+      hamImages[imageTypeIndex].complete &&
+      hamImages[imageTypeIndex].src) {
+    imageDisplay = '<img src="' + hamImages[imageTypeIndex].src + '" style="width: 80px; height: 80px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.3);" onerror="this.style.display=\'none\'; this.nextElementSibling.style.display=\'flex\';" alt="' + data.name + '">' +
+                  '<div style="width: 80px; height: 80px; border-radius: 12px; background: linear-gradient(135deg, #4facfe, #00f2fe); display: none; align-items: center; justify-content: center; font-size: 40px; box-shadow: 0 4px 12px rgba(0,0,0,0.3); color: white;">' + stageIcons[stageIndex] + '</div>';
+  } else {
+    imageDisplay = '<div style="width: 80px; height: 80px; border-radius: 12px; background: linear-gradient(135deg, #4facfe, #00f2fe); display: flex; align-items: center; justify-content: center; font-size: 40px; box-shadow: 0 4px 12px rgba(0,0,0,0.3); color: white;">' + stageIcons[stageIndex] + '</div>';
+  }
   
   // 詳細画面を作成
   var detailScreen = document.createElement('div');
@@ -316,7 +355,7 @@ function showPokedexDetail(id) {
     '<div class="card" style="max-width: 480px; text-align: center;">' +
       '<div style="position: relative;">' +
         '<button onclick="this.parentElement.parentElement.parentElement.remove()" style="position: absolute; top: -10px; right: -10px; background: rgba(255,255,255,0.8); border: none; border-radius: 50%; width: 30px; height: 30px; cursor: pointer; font-size: 16px; color: #333;">×</button>' +
-        '<div style="font-size: 64px; margin: 20px 0;">' + imageDisplay + '</div>' +
+        '<div style="margin: 20px 0; display: flex; justify-content: center;">' + imageDisplay + '</div>' +
         '<h3 style="margin: 16px 0; font-size: 24px;">' + data.name + '</h3>' +
         '<div style="background: rgba(255,255,255,0.2); border-radius: 12px; padding: 16px; margin: 16px 0; backdrop-filter: blur(10px);">' +
           '<div style="font-size: 14px; margin: 8px 0;"><strong>📱 持ち主:</strong> ' + data.owner + '</div>' +
@@ -919,45 +958,78 @@ function initGame() {
   requestAnimationFrame(gameLoop);
 }
 
+// 画像管理の完全修正版
+var imageLoadStatus = {
+  loaded: false,
+  currentStage: -1,
+  images: []
+};
+
 function loadStageImages(stageIndex) {
-  console.log('ステージ ' + STAGES[stageIndex].name + ' の画像を読み込み中...');
-  var stage = STAGES[stageIndex];
+  console.log('🖼️ ステージ ' + STAGES[stageIndex].name + ' の画像読み込み開始');
   
-  // 画像読み込み状態をリセット
+  // 既に同じステージの画像が読み込み済みの場合はスキップ
+  if (imageLoadStatus.loaded && imageLoadStatus.currentStage === stageIndex) {
+    console.log('✅ 既に読み込み済み、スキップ');
+    useImages = true;
+    return;
+  }
+  
+  var stage = STAGES[stageIndex];
   useImages = false;
   loadedImages = 0;
+  imageLoadStatus.loaded = false;
+  imageLoadStatus.currentStage = stageIndex;
   
   // 新しい画像配列を作成
-  hamImages = Array.from({length: TYPES}, function() { return new Image(); });
+  imageLoadStatus.images = Array.from({length: TYPES}, function() { return new Image(); });
+  hamImages = imageLoadStatus.images;
+
+  var successCount = 0;
+  var totalImages = TYPES;
 
   hamImages.forEach(function(img, i) {
     var imageNumber = stage.range[0] + i;
     var imagePath = 'assets/ham_' + String(imageNumber).padStart(2, '0') + '.png';
     
-    // 画像読み込み成功時
+    // 読み込み完了（成功）
     img.onload = function() {
-      loadedImages++;
-      console.log('はむケツ画像 ' + (i + 1) + '/6 読み込み完了: ' + imagePath);
-      if (loadedImages === TYPES) {
-        useImages = true;
-        console.log(stage.name + 'の全画像読み込み完了！');
+      successCount++;
+      console.log('✅ 画像読み込み成功 ' + successCount + '/' + totalImages + ': ' + imagePath);
+      
+      if (successCount + (totalImages - successCount) === totalImages) {
+        imageLoadStatus.loaded = true;
+        if (successCount > 0) {
+          useImages = true;
+          console.log('🎉 画像読み込み完了: ' + successCount + '個成功');
+        }
       }
     };
     
-    // 画像読み込み失敗時
+    // 読み込み失敗
     img.onerror = function() {
-      console.log('はむケツ画像が見つかりません: ' + imagePath + '（カラー円で代用）');
-      loadedImages++;
-      // 失敗してもカウントを進めて、他の画像読み込みを阻害しない
-      if (loadedImages === TYPES) {
-        console.log('画像読み込み処理完了（一部失敗含む）');
+      console.log('❌ 画像読み込み失敗: ' + imagePath);
+      // 失敗した画像は null に設定
+      hamImages[i] = null;
+      
+      if (successCount + (totalImages - successCount) === totalImages) {
+        imageLoadStatus.loaded = true;
+        console.log('📝 画像読み込み処理完了（一部失敗含む）');
       }
     };
     
-    // 画像のsrcを設定（読み込み開始）
+    // 画像読み込み開始
     img.src = imagePath;
-    console.log('画像読み込み開始:', imagePath);
   });
+  
+  // 3秒でタイムアウト（フォールバック）
+  setTimeout(function() {
+    if (!imageLoadStatus.loaded) {
+      console.log('⏰ 画像読み込みタイムアウト、アイコン表示に切り替え');
+      imageLoadStatus.loaded = true;
+      useImages = false;
+    }
+  }, 3000);
 }
 
 function fit() {
@@ -1109,7 +1181,7 @@ function processResolving() {
 }
 
 function scanForMatches() {
-  console.log('消去スキャン開始');
+  console.log('🔍 消去スキャン開始 - 現在のチェイン:', chain);
   
   for (var r = 0; r < ROWS; r++) {
     for (var c = 0; c < COLS; c++) {
@@ -1120,6 +1192,7 @@ function scanForMatches() {
   var visited = Array.from({ length: ROWS }, function() { return Array(COLS).fill(false); });
   var directions = [[1, 0], [-1, 0], [0, 1], [0, -1]];
   var totalCleared = 0;
+  var matchGroups = [];
 
   function floodFill(startR, startC) {
     var type = grid[startR][startC].type;
@@ -1149,13 +1222,21 @@ function scanForMatches() {
     return cells;
   }
 
+  // 消去対象を検索
   for (var r = 0; r < ROWS; r++) {
     for (var c = 0; c < COLS; c++) {
       if (!visited[r][c] && grid[r][c].type) {
         var cells = floodFill(r, c);
         if (cells.length >= 4) {
-          console.log('消去対象発見: ' + cells.length + '個, タイプ' + grid[r][c].type);
+          console.log('💥 消去対象発見: ' + cells.length + '個, タイプ' + grid[r][c].type);
           totalCleared += cells.length;
+          matchGroups.push({
+            type: grid[r][c].type,
+            count: cells.length,
+            cells: cells
+          });
+          
+          // セルにマークを付ける
           cells.forEach(function(cell) {
             var rr = cell[0];
             var cc = cell[1];
@@ -1168,16 +1249,36 @@ function scanForMatches() {
   }
 
   if (totalCleared > 0) {
-    console.log('合計' + totalCleared + '個を消去予定, チェーン' + (chain + 1));
+    // チェインカウントを増加
+    chain++;
+    console.log('⚡ チェイン' + chain + '発生！ 合計' + totalCleared + '個消去');
+    
+    // スコア計算（修正版）
+    var basePoints = totalCleared * 10; // 基本10点/ブロック
+    var chainBonus = chain > 1 ? Math.pow(2, chain - 1) : 1; // チェインボーナス（2の累乗）
+    var addedPoints = Math.floor(basePoints * chainBonus);
+    
+    score += addedPoints;
+    console.log('📊 スコア計算: ' + totalCleared + '個 × 10 × ' + chainBonus + ' = +' + addedPoints + '点 (合計:' + score + ')');
+    
     phase = 1;
     phaseTimer = 0;
-    chain++;
+    updateHUD();
   } else {
-    console.log('消去対象なし - 処理終了');
+    console.log('❌ 消去対象なし - チェインリセット');
+    
+    // チェインリセット（重要！）
+    if (chain > 0) {
+      console.log('🔄 チェイン終了: ' + chain + ' → 0');
+      chain = 0;
+      updateHUD();
+    }
+    
     resolving = false;
     falling = nextPair;
     nextPair = newPair();
     
+    // 全ブロッククリアチェック
     var hasBlocks = false;
     for (var r = 0; r < ROWS; r++) {
       for (var c = 0; c < COLS; c++) {
@@ -1192,8 +1293,6 @@ function scanForMatches() {
     if (!hasBlocks) {
       clearNow();
     }
-    
-    updateHUD();
   }
 }
 
@@ -1224,11 +1323,7 @@ function clearMarkedBlocks() {
     }
   });
   
-  if (clearedCount > 0) {
-    var points = clearedCount * 10 * (chain > 1 ? chain : 1);
-    score += points;
-    updateHUD();
-  }
+  console.log('🗑️ ブロック消去完了: ' + clearedCount + '個');
 }
 
 function dropBlocks() {
@@ -1442,7 +1537,18 @@ function update(dt) {
   }
 
   dropTimer += dt;
-  var fallInterval = Math.max(150, 800 - Math.floor(score / 200) * 30);
+  
+  // 新しい落下速度計算（優しい設定）
+  // 初期速度: 1000ms、500点ごとに25ms加速、最低250ms
+  var baseInterval = 1000; // 初期1秒
+  var speedUpPoints = 500; // 500点ごと
+  var speedUpAmount = 25; // 25ms加速
+  var minInterval = 250; // 最高速度250ms
+  
+  var speedUps = Math.floor(score / speedUpPoints);
+  var fallInterval = Math.max(minInterval, baseInterval - (speedUps * speedUpAmount));
+  
+  console.log('スコア:', score, '加速回数:', speedUps, '落下間隔:', fallInterval + 'ms');
   
   if (dropTimer >= fallInterval) {
     dropTimer = 0;
