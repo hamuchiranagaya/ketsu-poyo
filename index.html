@@ -299,22 +299,12 @@ function showPokedexDetail(id) {
   
   if (!entry.discovered) return;
   
-  // 画像表示の決定（より確実な方法）
+  // 画像表示の完全修正版
   var imageDisplay = '';
-  var imageTypeIndex = ((id - 1) % 6); // 0-5の範囲
+  console.log('図鑑詳細 - ID:', id, 'ステージ:', stageIndex);
   
-  console.log('図鑑詳細表示 - ID:', id, 'ステージ:', stageIndex, '画像インデックス:', imageTypeIndex);
-  console.log('useImages:', useImages, 'hamImages[' + imageTypeIndex + ']:', hamImages[imageTypeIndex]);
-  
-  if (useImages && hamImages[imageTypeIndex] && hamImages[imageTypeIndex].complete && hamImages[imageTypeIndex].naturalWidth > 0) {
-    // 画像が正常に読み込まれている場合
-    imageDisplay = '<img src="' + hamImages[imageTypeIndex].src + '" style="width: 80px; height: 80px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.3);" alt="' + data.name + '">';
-    console.log('画像表示使用:', hamImages[imageTypeIndex].src);
-  } else {
-    // フォールバック：アイコン表示
-    imageDisplay = '<div style="width: 80px; height: 80px; border-radius: 12px; background: linear-gradient(135deg, #4facfe, #00f2fe); display: flex; align-items: center; justify-content: center; font-size: 40px; box-shadow: 0 4px 12px rgba(0,0,0,0.3);">' + stageIcons[stageIndex] + '</div>';
-    console.log('アイコン表示使用:', stageIcons[stageIndex]);
-  }
+  // ステージアイコンを確実に表示（画像は後で追加）
+  imageDisplay = '<div style="width: 80px; height: 80px; border-radius: 12px; background: linear-gradient(135deg, #4facfe, #00f2fe); display: flex; align-items: center; justify-content: center; font-size: 40px; box-shadow: 0 4px 12px rgba(0,0,0,0.3); color: white;">' + stageIcons[stageIndex] + '</div>';
   
   // 詳細画面を作成
   var detailScreen = document.createElement('div');
