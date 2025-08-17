@@ -2126,7 +2126,11 @@ function resetAllScores() {
     }
   }
 }
-// 簡易版スコア保存（フォールバック用）
+// 簡単なインストール機能（onclick直接指定版）
+function simpleInstall() {
+  console.log('📱 簡単インストール実行');
+  alert('📱 ホーム画面への追加方法\n\n【iPhone/iPad (Safari)】\n1. 下部の「共有」ボタン（□↑）をタップ\n2. 「ホーム画面に追加」を選択\n\n【Android (Chrome)】\n1. 右上の「⋮」メニューをタップ\n2. 「ホーム画面に追加」を選択\n\n【PC (Chrome)】\n1. アドレスバー右の「インストール」アイコンをクリック\n2. または右上メニューから「アプリをインストール」');
+}
 function saveScoreSimple(score) {
   console.log('🔄 簡易版スコア保存開始:', score);
   
@@ -2337,10 +2341,13 @@ console.log('全関数定義完了');
     
     <div class="install-section">
       <p>📱 ホーム画面に追加してアプリのように使えます</p>
-      <button id="installBtn" class="install-btn">
+      <button id="installBtn" class="install-btn" style="display: inline-flex;" onclick="simpleInstall()">
         <span>📲</span>
-        <span>ホーム画面に追加</span>
+        <span id="installText">ホーム画面に追加</span>
       </button>
+      <div id="installDebug" style="font-size: 10px; margin-top: 8px; color: rgba(255,255,255,0.7); display: none;">
+        デバッグ情報がここに表示されます
+      </div>
     </div>
     
     <div class="game-description">
