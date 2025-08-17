@@ -1,4 +1,6 @@
-<!doctype html>
+    <button id="gameStartButton" class="start-btn">
+      ゲームスタート
+    </button><!doctype html>
 <html lang="ja">
 <head>
   <meta charset="utf-8"/>
@@ -7,6 +9,1149 @@
   <link rel="manifest" href="manifest.json">
   <meta name="theme-color" content="#4facfe">
   <link rel="icon" href="ketsupoyo.png" type="image/png">
+  
+  <script>
+// 最初にすべての関数を定義
+console.log('関数定義開始');
+
+// グローバル変数
+var currentStage = 0;
+var gameStarted = false;
+var grid;
+var falling;
+var nextPair;
+var score = 0;
+var chain = 0;
+var gameOver = false;
+var timeMode = false;
+var timeLeft = 180000;
+var dropTimer = 0;
+var resolving = false;
+var phase = 0;
+var phaseTimer = 0;
+var particles = [];
+
+// ゲーム設定
+var canvas = null;
+var ctx = null;
+var W = 384;
+var H = 640;
+var COLS = 6;
+var ROWS = 12;
+var TILE = 0;
+var PX = 0;
+var PY = 0;
+var TYPES = 6;
+var COLORS = ['#f5c6a5', '#e0f0ff', '#c6d0ff', '#ffd9d9', '#c0ffc8', '#ffe6a8'];
+
+// ステージ設定
+var STAGES = [
+  { name: '春のケツ', icon: '🌸', range: [1, 6], season: 'spring' },
+  { name: '夏のケツ', icon: '🌻', range: [7, 12], season: 'summer' },
+  { name: '秋のケツ', icon: '🍂', range: [13, 18], season: 'autumn' },
+  { name: '冬のケツ', icon: '❄️', range: [19, 24], season: 'winter' }
+];
+
+// 画像
+var hamImages = [];
+var useImages = false;
+var loadedImages = 0;
+
+// 図鑑データ（CSV形式対応）
+var POKEDEX_DATA = {
+  1: { name: "オレケツ", owner: "カフェオレ", youtubeUrl: "https://youtu.be/ryNzm7qFVzc?si=IC1J5szhLJk3oyu9", description: "カフェオレの美味しそうなケツ" },
+  2: { name: "バインバイン", owner: "かぬれ", youtubeUrl: "https://youtu.be/uWz_CqxCvjY?si=Cv-N3GAoI6lGIq8l", description: "バインバインと弾むケツ" },
+  3: { name: "黄金比ケツ", owner: "こった", youtubeUrl: "https://youtu.be/I6K_khVgrw0?si=b8Hgg4Ntkb0O_A8-", description: "完璧な黄金比で作られたケツ" },
+  4: { name: "ふらケツ", owner: "フラン", youtubeUrl: "https://youtu.be/sljohJszRQY?si=ERUAGUqYOaRF7uMc", description: "ふらふらと魅力的なケツ" },
+  5: { name: "デリシャスケツ", owner: "すぷもーね", youtubeUrl: "https://youtu.be/cjBBnWUbSFA?si=5cs98umvW9AY2LXI", description: "美味しそうなデリシャスケツ" },
+  6: { name: "やばケツ", owner: "アマレッティ", youtubeUrl: "https://youtu.be/gX3N5M8Am9Y?si=E1ZusoKkKbtr5lzh", description: "やばいくらい素晴らしいケツ" },
+  7: { name: "ぱんケツ", owner: "ぱんな", youtubeUrl: "https://youtube.com/shorts/hGF6ZgvpJOU?si=T2up9cTIYPmdrNcg", description: "ふわふわパンのようなケツ" },
+  8: { name: "夏の太陽ケツ", owner: "なつちゃん", youtubeUrl: "", description: "夏の太陽のように輝くケツ" },
+  9: { name: "花火ケツ", owner: "はなびちゃん", youtubeUrl: "", description: "花火のように美しいケツ" },
+  10: { name: "プールケツ", owner: "すいちゃん", youtubeUrl: "", description: "プールで泳ぐケツ" },
+  11: { name: "ひまわりケツ", owner: "ひまりちゃん", youtubeUrl: "", description: "ひまわりのように元気なケツ" },
+  12: { name: "かき氷ケツ", owner: "かきちゃん", youtubeUrl: "", description: "冷たくて美味しそうなケツ" },
+  13: { name: "紅葉ケツ", owner: "もみじちゃん", youtubeUrl: "", description: "紅葉のように美しいケツ" },
+  14: { name: "栗拾いケツ", owner: "くりちゃん", youtubeUrl: "", description: "栗拾いが楽しいケツ" },
+  15: { name: "お月見ケツ", owner: "つきちゃん", youtubeUrl: "", description: "お月見をするケツ" },
+  16: { name: "コスモスケツ", owner: "こすもちゃん", youtubeUrl: "", description: "コスモスのように可憐なケツ" },
+  17: { name: "読書ケツ", owner: "ほんちゃん", youtubeUrl: "", description: "読書の秋のケツ" },
+  18: { name: "芸術ケツ", owner: "あーとちゃん", youtubeUrl: "", description: "芸術的なケツ" },
+  19: { name: "雪だるまケツ", owner: "ゆきちゃん", youtubeUrl: "", description: "雪だるまのようなケツ" },
+  20: { name: "クリスマスケツ", owner: "くりすちゃん", youtubeUrl: "", description: "クリスマスにぴったりなケツ" },
+  21: { name: "お正月ケツ", owner: "しょうちゃん", youtubeUrl: "", description: "お正月を祝うケツ" },
+  22: { name: "温泉ケツ", owner: "おんせんちゃん", youtubeUrl: "", description: "温泉でほっこりケツ" },
+  23: { name: "こたつケツ", owner: "こたつちゃん", youtubeUrl: "", description: "こたつでまったりケツ" },
+  24: { name: "雪景色ケツ", owner: "せつちゃん", youtubeUrl: "", description: "雪景色のように美しいケツ" }
+};
+
+// CSV読み込み関数
+function loadPokedexDataFromCSV(csvData) {
+  try {
+    // CSV解析（簡易版）
+    var lines = csvData.split('\n');
+    var headers = lines[0].split(',').map(function(h) { return h.trim(); });
+    
+    for (var i = 1; i < lines.length; i++) {
+      if (lines[i].trim() === '') continue;
+      
+      var values = lines[i].split(',').map(function(v) { return v.trim(); });
+      var id = parseInt(values[0]);
+      
+      if (id && id >= 1 && id <= 24) {
+        POKEDEX_DATA[id] = {
+          name: values[1] || '',
+          owner: values[2] || '',
+          youtubeUrl: values[3] || '',
+          description: values[4] || ''
+        };
+      }
+    }
+    console.log('図鑑データ更新完了');
+  } catch (error) {
+    console.log('CSV読み込みエラー:', error);
+  }
+}
+
+// UI関数（最初に定義）
+function selectStage(stageIndex) {
+  console.log('ステージ選択:', stageIndex);
+  var stageBtns = document.querySelectorAll('.stage-btn');
+  stageBtns.forEach(function(btn) { btn.classList.remove('active'); });
+  stageBtns[stageIndex].classList.add('active');
+  currentStage = stageIndex;
+  
+  var stageNames = ['春のケツ', '夏のケツ', '秋のケツ', '冬のケツ'];
+  console.log(stageNames[stageIndex] + 'が選択されました');
+}
+
+function startGame() {
+  console.log('ゲームスタートボタンがクリックされました！');
+  try {
+    console.log('現在のステージ:', currentStage);
+    console.log('STAGES配列:', STAGES);
+    console.log('選択されたステージ:', STAGES[currentStage]);
+    
+    loadStageImages(currentStage);
+    gameStarted = true;
+    
+    var startScreen = document.getElementById('startScreen');
+    var gameArea = document.getElementById('gameArea');
+    
+    console.log('startScreen要素:', startScreen);
+    console.log('gameArea要素:', gameArea);
+    
+    if (startScreen) {
+      startScreen.style.display = 'none';
+      console.log('スタート画面を非表示にしました');
+    } else {
+      console.error('startScreen要素が見つかりません');
+    }
+    
+    if (gameArea) {
+      gameArea.classList.add('active');
+      console.log('ゲームエリアをアクティブにしました');
+    } else {
+      console.error('gameArea要素が見つかりません');
+    }
+    
+    console.log('initGame()を呼び出します');
+    initGame();
+    console.log('ゲーム初期化完了');
+    
+  } catch (error) {
+    console.error('startGame()でエラーが発生しました:', error);
+    alert('ゲーム開始でエラーが発生しました: ' + error.message);
+  }
+}
+
+function showPokedex() {
+  console.log('図鑑を表示');
+  var pokedexScreen = document.getElementById('pokedexScreen');
+  var pokedexGrid = document.getElementById('pokedexGrid');
+  var pokedex = loadPokedex();
+  
+  pokedexGrid.innerHTML = '';
+  
+  var stageNames = ['春のケツ', '夏のケツ', '秋のケツ', '冬のケツ'];
+  var stageIcons = ['🌸', '🌻', '🍂', '❄️'];
+  
+  for (var i = 1; i <= 24; i++) {
+    var key = 'type_' + i;
+    var entry = pokedex[key] || { count: 0, discovered: false };
+    var stageIndex = Math.floor((i - 1) / 6);
+    var data = POKEDEX_DATA[i] || { name: '???', owner: '???', youtubeUrl: '', description: '???' };
+    
+    var entryDiv = document.createElement('div');
+    entryDiv.className = 'pokedex-entry ' + (entry.discovered ? 'discovered' : 'undiscovered');
+    entryDiv.onclick = entry.discovered ? (function(index) {
+      return function() { showPokedexDetail(index); };
+    })(i) : null;
+    entryDiv.style.cursor = entry.discovered ? 'pointer' : 'default';
+    
+    if (entry.discovered) {
+      entryDiv.innerHTML = 
+        '<div class="pokedex-image" style="font-size: 32px; margin-bottom: 8px; height: 40px; display: flex; align-items: center; justify-content: center;">' + 
+        (useImages && hamImages[((i-1) % 6)] && hamImages[((i-1) % 6)].complete ? 
+          '<img src="' + hamImages[((i-1) % 6)].src + '" style="width: 40px; height: 40px; border-radius: 8px;">' : 
+          stageIcons[stageIndex]) + 
+        '</div>' +
+        '<div style="font-weight: bold; font-size: 10px; margin: 4px 0;">No.' + String(i).padStart(2, '0') + '</div>' +
+        '<div style="font-weight: bold; font-size: 12px; margin: 2px 0; color: #ffeb3b;">' + data.name + '</div>' +
+        '<div style="font-size: 10px; opacity: 0.8; margin: 2px 0;">' + data.owner + '</div>' +
+        '<div style="font-size: 9px; margin-top: 4px; color: #4fc3f7;">消去数: ' + entry.count + '</div>' +
+        '<div style="font-size: 8px; margin-top: 2px; opacity: 0.6;">クリックで詳細</div>';
+    } else {
+      entryDiv.innerHTML = 
+        '<div style="font-size: 32px; margin-bottom: 8px; height: 40px; display: flex; align-items: center; justify-content: center;">❓</div>' +
+        '<div style="font-weight: bold; font-size: 10px; margin: 4px 0;">No.' + String(i).padStart(2, '0') + '</div>' +
+        '<div style="font-size: 10px; opacity: 0.8; margin: 2px 0; color: #ffffff;">' + stageNames[stageIndex] + '</div>' +
+        '<div style="font-size: 11px; margin-top: 6px; color: #333; background: rgba(255,255,255,0.95); padding: 4px 8px; border-radius: 10px; font-weight: bold; border: 1px solid rgba(0,0,0,0.1);">' + entry.count + '/30</div>' +
+        '<div style="font-size: 8px; margin-top: 4px; color: #ffffff; background: rgba(0,0,0,0.3); padding: 2px 4px; border-radius: 4px;">30個消去で解放</div>';
+    }
+    
+    pokedexGrid.appendChild(entryDiv);
+  }
+  
+  pokedexScreen.style.display = 'flex';
+}
+
+function showPokedexDetail(id) {
+  var data = POKEDEX_DATA[id];
+  var pokedex = loadPokedex();
+  var entry = pokedex['type_' + id] || { count: 0, discovered: false };
+  var stageIndex = Math.floor((id - 1) / 6);
+  var stageNames = ['春のケツ', '夏のケツ', '秋のケツ', '冬のケツ'];
+  var stageIcons = ['🌸', '🌻', '🍂', '❄️'];
+  
+  if (!entry.discovered) return;
+  
+  // 詳細画面を作成
+  var detailScreen = document.createElement('div');
+  detailScreen.className = 'overlay';
+  detailScreen.style.display = 'flex';
+  detailScreen.style.zIndex = '1001';
+  
+  detailScreen.innerHTML = 
+    '<div class="card" style="max-width: 480px; text-align: center;">' +
+      '<div style="position: relative;">' +
+        '<button onclick="this.parentElement.parentElement.parentElement.remove()" style="position: absolute; top: -10px; right: -10px; background: rgba(255,255,255,0.8); border: none; border-radius: 50%; width: 30px; height: 30px; cursor: pointer; font-size: 16px; color: #333;">×</button>' +
+        '<div style="font-size: 64px; margin: 20px 0;">' + 
+        (useImages && hamImages[((id-1) % 6)] && hamImages[((id-1) % 6)].complete ? 
+          '<img src="' + hamImages[((id-1) % 6)].src + '" style="width: 80px; height: 80px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.3);">' : 
+          stageIcons[stageIndex]) + 
+        '</div>' +
+        '<h3 style="margin: 16px 0; font-size: 24px;">' + data.name + '</h3>' +
+        '<div style="background: rgba(255,255,255,0.2); border-radius: 12px; padding: 16px; margin: 16px 0; backdrop-filter: blur(10px);">' +
+          '<div style="font-size: 14px; margin: 8px 0;"><strong>📱 持ち主:</strong> ' + data.owner + '</div>' +
+          '<div style="font-size: 14px; margin: 8px 0;"><strong>🏷️ 分類:</strong> ' + stageNames[stageIndex] + '</div>' +
+          '<div style="font-size: 14px; margin: 8px 0;"><strong>🔢 図鑑No:</strong> ' + String(id).padStart(3, '0') + '</div>' +
+          '<div style="font-size: 14px; margin: 8px 0;"><strong>💥 消去数:</strong> ' + entry.count + '個</div>' +
+          '<div style="font-size: 12px; margin: 12px 0; line-height: 1.4; opacity: 0.9;">' + data.description + '</div>' +
+        '</div>' +
+        '<div class="row" style="margin-top: 20px; gap: 12px;">' +
+          (data.youtubeUrl && data.youtubeUrl.trim() !== '' ? 
+            '<button onclick="window.open(\'' + data.youtubeUrl + '\', \'_blank\')" style="background: linear-gradient(135deg, #ff0000, #cc0000); flex: 1;">' +
+              '🎬 動画を見る' +
+            '</button>' : 
+            '<button disabled style="background: #666; flex: 1; opacity: 0.5;">' +
+              '🎬 動画準備中' +
+            '</button>') +
+          '<button onclick="sharePokedexEntry(' + id + ')" style="background: linear-gradient(135deg, #1da1f2, #0d8bd9); flex: 1;">' +
+            '📤 シェア' +
+          '</button>' +
+        '</div>' +
+      '</div>' +
+    '</div>';
+  
+  document.body.appendChild(detailScreen);
+}
+
+function sharePokedexEntry(id) {
+  var data = POKEDEX_DATA[id];
+  var text = encodeURIComponent('はむケツ図鑑に「' + data.name + '」（' + data.owner + '）が登録されました！🐹✨\n\n#はむチラ #はむケツぽよぽよ #はむケツ図鑑');
+  var url = encodeURIComponent('https://hamuchiranagaya.github.io/ketsu-poyo/');
+  window.open('https://twitter.com/intent/tweet?text=' + text + '&url=' + url, '_blank');
+}
+
+function closePokedex() {
+  document.getElementById('pokedexScreen').style.display = 'none';
+}
+
+function shareToX() {
+  var text = encodeURIComponent('はむケツぽよぽよで遊んでみてね！🐹✨\nはむケツを4個以上つなげて、ぷるぷる消すパズルゲーム\n\n#はむチラ #はむケツぽよぽよ');
+  var url = encodeURIComponent('https://hamuchiranagaya.github.io/ketsu-poyo/');
+  window.open('https://twitter.com/intent/tweet?text=' + text + '&url=' + url, '_blank');
+}
+
+function copyURL() {
+  var gameUrl = 'https://hamuchiranagaya.github.io/ketsu-poyo/';
+  var textArea = document.createElement('textarea');
+  textArea.value = gameUrl;
+  document.body.appendChild(textArea);
+  textArea.select();
+  document.execCommand('copy');
+  document.body.removeChild(textArea);
+  
+  var copyText = document.getElementById('copyText');
+  if (copyText) {
+    copyText.textContent = 'コピー完了';
+    setTimeout(function() {
+      copyText.textContent = 'URLコピー';
+    }, 2000);
+  }
+}
+
+function backToStart() {
+  gameStarted = false;
+  document.getElementById('gameArea').classList.remove('active');
+  document.getElementById('startScreen').style.display = 'block';
+  hideGameOverlay();
+}
+
+function restart() {
+  grid = resetGrid();
+  score = 0;
+  chain = 0;
+  gameOver = false;
+  dropTimer = 0;
+  resolving = false;
+  phase = 0;
+  phaseTimer = 0;
+  particles = [];
+  
+  falling = newPair();
+  nextPair = newPair();
+  
+  updateHUD();
+  hideGameOverlay();
+}
+
+function shareResult() {
+  var text = encodeURIComponent('はむケツぽよぽよでスコア ' + score + ' 点を記録！🐹✨\nはむケツを4個以上つなげて、ぷるぷる消すパズルゲーム\n\n#はむチラ #はむケツぽよぽよ');
+  var url = encodeURIComponent('https://hamuchiranagaya.github.io/ketsu-poyo/');
+  window.open('https://twitter.com/intent/tweet?text=' + text + '&url=' + url, '_blank');
+}
+
+// 操作関数
+function moveLeft() {
+  if (!falling || gameOver || resolving) return;
+  if (canMove(falling, -1, 0)) {
+    falling.cx -= 1;
+  }
+}
+
+function moveRight() {
+  if (!falling || gameOver || resolving) return;
+  if (canMove(falling, 1, 0)) {
+    falling.cx += 1;
+  }
+}
+
+function softDrop() {
+  if (!falling || gameOver || resolving) return;
+  if (canMove(falling, 0, 1)) {
+    falling.cy += 1;
+  } else {
+    lockPiece();
+  }
+}
+
+function hardDrop() {
+  if (!falling || gameOver || resolving) return;
+  while (canMove(falling, 0, 1)) {
+    falling.cy += 1;
+  }
+  lockPiece();
+}
+
+function rotate() {
+  if (!falling || gameOver || resolving) return;
+  
+  var nextRot = (falling.rot + 1) % 4;
+  var newBlocks = getRotatedBlocks(
+    nextRot, 
+    falling.blocks[0].type, 
+    falling.blocks[1].type
+  );
+  
+  var tempPair = {
+    cx: falling.cx,
+    cy: falling.cy,
+    blocks: newBlocks,
+    rot: nextRot
+  };
+  
+  if (canMove(tempPair, 0, 0)) {
+    falling.blocks = newBlocks;
+    falling.rot = nextRot;
+  }
+}
+
+function toggleTimeMode() {
+  timeMode = !timeMode;
+  var timeWrap = document.getElementById('timeWrap');
+  var modeBtn = document.getElementById('mode');
+  
+  if (timeMode) {
+    timeLeft = 180000;
+    if (timeWrap) timeWrap.style.display = 'inline';
+    if (modeBtn) modeBtn.textContent = '制限時間:ON';
+  } else {
+    if (timeWrap) timeWrap.style.display = 'none';
+    if (modeBtn) modeBtn.textContent = '制限時間:OFF';
+  }
+}
+
+// ゲーム関数
+function initGame() {
+  console.log('ゲーム初期化開始');
+  canvas = document.getElementById('game');
+  ctx = canvas.getContext('2d');
+  W = canvas.width;
+  H = canvas.height;
+  TILE = Math.floor(Math.min(W / COLS, H / ROWS));
+  PX = Math.floor((W - COLS * TILE) / 2);
+  PY = Math.floor((H - ROWS * TILE) / 2);
+  
+  hamImages = Array.from({length: TYPES}, function() { return new Image(); });
+  
+  loadStageImages(currentStage);
+  fit();
+  restart();
+  requestAnimationFrame(gameLoop);
+}
+
+function loadStageImages(stageIndex) {
+  console.log('ステージ ' + STAGES[stageIndex].name + ' の画像を読み込み中...');
+  var stage = STAGES[stageIndex];
+  useImages = false;
+  loadedImages = 0;
+
+  hamImages.forEach(function(img, i) {
+    var imageNumber = stage.range[0] + i;
+    img.onload = function() {
+      loadedImages++;
+      console.log('はむケツ画像 ' + (i + 1) + '/6 読み込み完了: assets/ham_' + String(imageNumber).padStart(2, '0') + '.png');
+      if (loadedImages === TYPES) {
+        useImages = true;
+        console.log(stage.name + 'の全画像読み込み完了！');
+      }
+    };
+    img.onerror = function() {
+      console.log('はむケツ画像が見つかりません: assets/ham_' + String(imageNumber).padStart(2, '0') + '.png（カラー円で代用）');
+    };
+    img.src = 'assets/ham_' + String(imageNumber).padStart(2, '0') + '.png';
+  });
+}
+
+function fit() {
+  if (!gameStarted) return;
+  
+  var availableWidth = window.innerWidth - 16;
+  var availableHeight = window.innerHeight - 280;
+  
+  var maxWidth = 500;
+  var maxHeight = 800;
+  
+  var scaleByWidth = Math.min(availableWidth, maxWidth) / W;
+  var scaleByHeight = Math.min(availableHeight, maxHeight) / H;
+  var scale = Math.min(scaleByWidth, scaleByHeight);
+  
+  var isSmallScreen = window.innerWidth <= 768;
+  var finalScale = isSmallScreen ? 
+    Math.max(scale, availableWidth / W * 0.9) : 
+    Math.max(scale, 0.8);
+  
+  canvas.style.width = (W * finalScale) + 'px';
+  canvas.style.height = (H * finalScale) + 'px';
+  
+  var btnBar = document.querySelector('.btnbar');
+  if (btnBar) {
+    btnBar.style.maxWidth = (W * finalScale) + 'px';
+    btnBar.style.width = (W * finalScale) + 'px';
+  }
+}
+
+function empty() {
+  return { type: 0, mark: false, seed: Math.random() * 1000 };
+}
+
+function resetGrid() {
+  return Array.from({ length: ROWS }, function() { 
+    return Array.from({ length: COLS }, empty);
+  });
+}
+
+function randomType() {
+  return 1 + Math.floor(Math.random() * TYPES);
+}
+
+function newPair() {
+  return {
+    cx: Math.floor(COLS / 2),
+    cy: -1,
+    blocks: [
+      { dx: 0, dy: 0, type: randomType() },
+      { dx: 0, dy: -1, type: randomType() }
+    ],
+    rot: 0
+  };
+}
+
+function updateHUD() {
+  var scoreEl = document.getElementById('score');
+  var chainEl = document.getElementById('chain');
+  if (scoreEl) scoreEl.textContent = score;
+  if (chainEl) chainEl.textContent = chain;
+}
+
+function canMove(pair, dx, dy) {
+  for (var i = 0; i < pair.blocks.length; i++) {
+    var block = pair.blocks[i];
+    var x = pair.cx + block.dx + dx;
+    var y = pair.cy + block.dy + dy;
+    
+    if (x < 0 || x >= COLS || y >= ROWS) {
+      return false;
+    }
+    
+    if (y >= 0 && grid[y][x].type) {
+      return false;
+    }
+  }
+  return true;
+}
+
+function getRotatedBlocks(rot, type0, type1) {
+  var block0 = { dx: 0, dy: 0, type: type0 };
+  var block1 = { dx: 0, dy: -1, type: type1 };
+  
+  if (rot === 1) { block1.dx = 1; block1.dy = 0; }
+  if (rot === 2) { block1.dx = 0; block1.dy = 1; }
+  if (rot === 3) { block1.dx = -1; block1.dy = 0; }
+  
+  return [block0, block1];
+}
+
+function lockPiece() {
+  console.log('ピース固定開始');
+  
+  for (var i = 0; i < falling.blocks.length; i++) {
+    var block = falling.blocks[i];
+    var x = falling.cx + block.dx;
+    var y = falling.cy + block.dy;
+    
+    if (y < 0) {
+      gameOverNow('上まで積み上がりました…');
+      return;
+    }
+    
+    grid[y][x] = { 
+      type: block.type, 
+      mark: false, 
+      seed: Math.random() * 1000
+    };
+    console.log('ブロック配置: (' + y + ',' + x + ') タイプ' + block.type);
+  }
+  
+  falling = null;
+  dropBlocks();
+  
+  setTimeout(function() {
+    resolving = true;
+    phase = 0;
+    phaseTimer = 0;
+    scanForMatches();
+  }, 200);
+}
+
+function processResolving() {
+  phaseTimer += 16;
+  
+  if (phase === 0) {
+    scanForMatches();
+  } else if (phase === 1) {
+    if (phaseTimer >= 300) {
+      phase = 2;
+      phaseTimer = 0;
+    }
+  } else if (phase === 2) {
+    if (phaseTimer >= 200) {
+      clearMarkedBlocks();
+      dropBlocks();
+      
+      phase = 0;
+      phaseTimer = 0;
+      
+      setTimeout(function() {
+        if (resolving) {
+          scanForMatches();
+        }
+      }, 100);
+    }
+  }
+}
+
+function scanForMatches() {
+  console.log('消去スキャン開始');
+  
+  for (var r = 0; r < ROWS; r++) {
+    for (var c = 0; c < COLS; c++) {
+      grid[r][c].mark = false;
+    }
+  }
+
+  var visited = Array.from({ length: ROWS }, function() { return Array(COLS).fill(false); });
+  var directions = [[1, 0], [-1, 0], [0, 1], [0, -1]];
+  var totalCleared = 0;
+
+  function floodFill(startR, startC) {
+    var type = grid[startR][startC].type;
+    var queue = [[startR, startC]];
+    var cells = [[startR, startC]];
+    visited[startR][startC] = true;
+
+    while (queue.length > 0) {
+      var current = queue.shift();
+      var r = current[0];
+      var c = current[1];
+      
+      for (var i = 0; i < directions.length; i++) {
+        var dir = directions[i];
+        var nr = r + dir[0];
+        var nc = c + dir[1];
+        
+        if (nr >= 0 && nr < ROWS && nc >= 0 && nc < COLS &&
+            !visited[nr][nc] && grid[nr][nc].type === type) {
+          visited[nr][nc] = true;
+          queue.push([nr, nc]);
+          cells.push([nr, nc]);
+        }
+      }
+    }
+    
+    return cells;
+  }
+
+  for (var r = 0; r < ROWS; r++) {
+    for (var c = 0; c < COLS; c++) {
+      if (!visited[r][c] && grid[r][c].type) {
+        var cells = floodFill(r, c);
+        if (cells.length >= 4) {
+          console.log('消去対象発見: ' + cells.length + '個, タイプ' + grid[r][c].type);
+          totalCleared += cells.length;
+          cells.forEach(function(cell) {
+            var rr = cell[0];
+            var cc = cell[1];
+            grid[rr][cc].mark = true;
+            spawnBurst(PX + cc * TILE + TILE / 2, PY + rr * TILE + TILE / 2, grid[rr][cc].type);
+          });
+        }
+      }
+    }
+  }
+
+  if (totalCleared > 0) {
+    console.log('合計' + totalCleared + '個を消去予定, チェーン' + (chain + 1));
+    phase = 1;
+    phaseTimer = 0;
+    chain++;
+  } else {
+    console.log('消去対象なし - 処理終了');
+    resolving = false;
+    falling = nextPair;
+    nextPair = newPair();
+    
+    var hasBlocks = false;
+    for (var r = 0; r < ROWS; r++) {
+      for (var c = 0; c < COLS; c++) {
+        if (grid[r][c].type) {
+          hasBlocks = true;
+          break;
+        }
+      }
+      if (hasBlocks) break;
+    }
+    
+    if (!hasBlocks) {
+      clearNow();
+    }
+    
+    updateHUD();
+  }
+}
+
+function clearMarkedBlocks() {
+  var clearedCount = 0;
+  var clearedTypes = {};
+  
+  for (var r = 0; r < ROWS; r++) {
+    for (var c = 0; c < COLS; c++) {
+      if (grid[r][c].mark) {
+        var type = grid[r][c].type;
+        
+        if (!clearedTypes[type]) {
+          clearedTypes[type] = 0;
+        }
+        clearedTypes[type]++;
+        
+        grid[r][c] = empty();
+        clearedCount++;
+      }
+    }
+  }
+  
+  // 図鑑に追加
+  Object.keys(clearedTypes).forEach(function(type) {
+    if (type > 0) {
+      addToPokedex(parseInt(type), clearedTypes[type]);
+    }
+  });
+  
+  if (clearedCount > 0) {
+    var points = clearedCount * 10 * (chain > 1 ? chain : 1);
+    score += points;
+    updateHUD();
+  }
+}
+
+function dropBlocks() {
+  console.log('落下処理開始');
+  
+  for (var c = 0; c < COLS; c++) {
+    var writeRow = ROWS - 1;
+    
+    for (var r = ROWS - 1; r >= 0; r--) {
+      if (grid[r][c].type !== 0) {
+        if (r !== writeRow) {
+          grid[writeRow][c] = {
+            type: grid[r][c].type,
+            mark: false,
+            seed: Math.random() * 1000
+          };
+          grid[r][c] = empty();
+          console.log('ブロック移動: (' + r + ',' + c + ') → (' + writeRow + ',' + c + ')');
+        }
+        writeRow--;
+      }
+    }
+  }
+  
+  console.log('落下処理完了');
+}
+
+function spawnBurst(x, y, type) {
+  var numParticles = 12;
+  for (var i = 0; i < numParticles; i++) {
+    var angle = (Math.PI * 2 * i) / numParticles;
+    var speed = 3 + Math.random() * 4;
+    particles.push({
+      x: x, 
+      y: y,
+      vx: Math.cos(angle) * speed,
+      vy: Math.sin(angle) * speed - 2,
+      life: 0,
+      maxLife: 600 + Math.random() * 400,
+      type: type,
+      size: TILE * (0.3 + Math.random() * 0.2)
+    });
+  }
+}
+
+function updateParticles(dt) {
+  var gravity = 0.015;
+  
+  particles.forEach(function(p) {
+    p.life += dt;
+    p.x += p.vx * dt * 0.1;
+    p.y += p.vy * dt * 0.1;
+    p.vy += gravity * dt;
+  });
+  
+  particles = particles.filter(function(p) { return p.life < p.maxLife; });
+}
+
+function drawBlob(x, y, size, type, alpha, shakeX, shakeY, scale) {
+  if (alpha === undefined) alpha = 1;
+  if (shakeX === undefined) shakeX = 0;
+  if (shakeY === undefined) shakeY = 0;
+  if (scale === undefined) scale = 1;
+  
+  ctx.save();
+  ctx.globalAlpha = alpha;
+  
+  var cx = x + size / 2 + shakeX;
+  var cy = y + size / 2 + shakeY;
+  
+  if (scale !== 1) {
+    ctx.translate(cx, cy);
+    ctx.scale(scale, scale);
+    ctx.translate(-cx, -cy);
+  }
+  
+  if (useImages && hamImages[type - 1] && hamImages[type - 1].complete) {
+    ctx.drawImage(hamImages[type - 1], x + shakeX, y + shakeY, size, size);
+  } else {
+    var r = size * 0.45;
+    
+    var grad = ctx.createRadialGradient(
+      cx - r * 0.4, cy - r * 0.4, r * 0.2,
+      cx, cy, r
+    );
+    var base = COLORS[(type - 1) % COLORS.length];
+    grad.addColorStop(0, '#ffffff');
+    grad.addColorStop(0.15, base);
+    grad.addColorStop(1, '#333');
+    
+    ctx.fillStyle = grad;
+    ctx.beginPath();
+    ctx.arc(cx, cy, r, 0, Math.PI * 2);
+    ctx.fill();
+    
+    ctx.fillStyle = 'rgba(255,255,255,0.6)';
+    ctx.beginPath();
+    ctx.arc(cx + r * 0.3, cy - r * 0.2, r * 0.15, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  
+  ctx.restore();
+}
+
+function drawParticles() {
+  for (var i = 0; i < particles.length; i++) {
+    var p = particles[i];
+    var alpha = Math.max(0, 1 - (p.life / p.maxLife));
+    var size = p.size * alpha;
+    
+    ctx.save();
+    ctx.globalAlpha = alpha;
+    
+    if (useImages && hamImages[p.type - 1] && hamImages[p.type - 1].complete) {
+      var imgSize = size * 0.3;
+      ctx.drawImage(hamImages[p.type - 1], p.x - imgSize/2, p.y - imgSize/2, imgSize, imgSize);
+    } else {
+      ctx.fillStyle = COLORS[(p.type - 1) % COLORS.length];
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, size * 0.15, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    
+    ctx.restore();
+  }
+}
+
+function draw() {
+  if (!gameStarted) return;
+  
+  ctx.fillStyle = '#0f1220';
+  ctx.fillRect(0, 0, W, H);
+  
+  for (var r = 0; r < ROWS; r++) {
+    for (var c = 0; c < COLS; c++) {
+      ctx.fillStyle = 'rgba(255,255,255,0.03)';
+      ctx.fillRect(PX + c * TILE + 1, PY + r * TILE + 1, TILE - 2, TILE - 2);
+    }
+  }
+  
+  for (var r = 0; r < ROWS; r++) {
+    for (var c = 0; c < COLS; c++) {
+      var cell = grid[r][c];
+      if (cell.type) {
+        var alpha = 1, shakeX = 0, shakeY = 0, scale = 1;
+        
+        if (cell.mark) {
+          if (phase === 1) {
+            var amp = TILE * 0.1;
+            var t = (phaseTimer + cell.seed * 15) * 0.02;
+            shakeX = Math.sin(t) * amp;
+            shakeY = Math.cos(t * 1.3) * amp;
+          } else if (phase === 2) {
+            var progress = phaseTimer / 300;
+            scale = 1 + progress * 0.5;
+            alpha = 1 - progress * 0.8;
+          }
+        }
+        
+        drawBlob(PX + c * TILE, PY + r * TILE, TILE, cell.type, alpha, shakeX, shakeY, scale);
+      }
+    }
+  }
+  
+  if (falling) {
+    for (var i = 0; i < falling.blocks.length; i++) {
+      var block = falling.blocks[i];
+      var x = falling.cx + block.dx;
+      var y = falling.cy + block.dy;
+      if (y >= 0) {
+        drawBlob(PX + x * TILE, PY + y * TILE, TILE, block.type);
+      }
+    }
+  }
+  
+  ctx.strokeStyle = 'rgba(255,255,255,0.2)';
+  ctx.lineWidth = 2;
+  ctx.strokeRect(PX - 1, PY - 1, COLS * TILE + 2, ROWS * TILE + 2);
+  
+  drawParticles();
+}
+
+function update(dt) {
+  if (!gameStarted || gameOver) return;
+
+  updateParticles(dt);
+
+  if (resolving) {
+    processResolving();
+    return;
+  }
+
+  dropTimer += dt;
+  var fallInterval = Math.max(150, 800 - Math.floor(score / 200) * 30);
+  
+  if (dropTimer >= fallInterval) {
+    dropTimer = 0;
+    if (falling) {
+      softDrop();
+    }
+  }
+
+  if (timeMode) {
+    timeLeft -= dt;
+    if (timeLeft <= 0) {
+      gameOverNow('時間切れ…');
+      return;
+    }
+    var timeEl = document.getElementById('time');
+    if (timeEl) {
+      timeEl.textContent = Math.max(0, Math.ceil(timeLeft / 1000));
+    }
+  }
+}
+
+function gameLoop() {
+  var now = performance.now();
+  var dt = now - (gameLoop.last || now);
+  gameLoop.last = now;
+  
+  update(dt);
+  draw();
+  
+  requestAnimationFrame(gameLoop);
+}
+
+function gameOverNow(reason) {
+  console.log('ゲームオーバー発生:', reason);
+  gameOver = true;
+  
+  saveScore(score);
+  
+  setTimeout(function() {
+    showGameOverlay('🐹 Game Over 🐹', reason + ' スコア: ' + score);
+  }, 100);
+}
+
+function clearNow() {
+  console.log('全クリア発生');
+  gameOver = true;
+  saveScore(score);
+  
+  showGameOverlay('🎉 おめでとう！ 🎉', '全部消しました！ スコア: ' + score);
+}
+
+function showGameOverlay(title, message) {
+  var overlay = document.getElementById('gameOverlay');
+  var ovTitle = document.getElementById('ovTitle');
+  var ovMsg = document.getElementById('ovMsg');
+  
+  if (overlay && ovTitle && ovMsg) {
+    ovTitle.textContent = title;
+    ovMsg.textContent = message;
+    showBest();
+    overlay.style.display = 'flex';
+    console.log('ゲーム結果画面を表示しました');
+  }
+}
+
+function hideGameOverlay() {
+  var overlay = document.getElementById('gameOverlay');
+  if (overlay) {
+    overlay.style.display = 'none';
+  }
+}
+
+// 図鑑システム
+function loadPokedex() {
+  try {
+    if (typeof(Storage) !== "undefined" && localStorage) {
+      return JSON.parse(localStorage.getItem('ham_poyo_pokedex') || '{}');
+    }
+  } catch (error) {
+    console.log('loadPokedex error:', error);
+  }
+  return {};
+}
+
+function savePokedex(pokedex) {
+  try {
+    if (typeof(Storage) !== "undefined" && localStorage) {
+      localStorage.setItem('ham_poyo_pokedex', JSON.stringify(pokedex));
+    }
+  } catch (error) {
+    console.log('savePokedex error:', error);
+  }
+}
+
+function addToPokedex(type, count) {
+  if (count === undefined) count = 1;
+  var pokedex = loadPokedex();
+  var key = 'type_' + type;
+  
+  if (!pokedex[key]) {
+    pokedex[key] = { count: 0, discovered: false };
+  }
+  
+  pokedex[key].count += count;
+  
+  if (pokedex[key].count >= 30 && !pokedex[key].discovered) {
+    pokedex[key].discovered = true;
+    showDiscoveryMessage(type);
+  }
+  
+  savePokedex(pokedex);
+  updatePokedexCount();
+  return pokedex[key];
+}
+
+function showDiscoveryMessage(type) {
+  var stageNames = ['春のケツ', '夏のケツ', '秋のケツ', '冬のケツ'];
+  var stageIndex = Math.floor((type - 1) / 6);
+  var hamNumber = type;
+  
+  setTimeout(function() {
+    alert('🎉 図鑑に新しいはむケツが追加されました！\n\n' + stageNames[stageIndex] + ' No.' + String(hamNumber).padStart(2, '0') + '\nが図鑑に登録されました！');
+  }, 500);
+}
+
+function getPokedexStats() {
+  var pokedex = loadPokedex();
+  var discovered = 0;
+  var total = 24;
+  
+  for (var i = 1; i <= total; i++) {
+    var key = 'type_' + i;
+    if (pokedex[key] && pokedex[key].discovered) {
+      discovered++;
+    }
+  }
+  
+  return { discovered: discovered, total: total };
+}
+
+function updatePokedexCount() {
+  var stats = getPokedexStats();
+  var countElement = document.getElementById('pokedexCount');
+  if (countElement) {
+    countElement.textContent = stats.discovered + '/' + stats.total;
+  }
+}
+
+// スコアシステム
+function loadScores() {
+  try {
+    if (typeof(Storage) !== "undefined" && localStorage) {
+      return JSON.parse(localStorage.getItem('ham_poyo_scores') || '[]');
+    }
+  } catch (error) {
+    console.log('loadScores error:', error);
+  }
+  return [];
+}
+
+function saveScore(score) {
+  try {
+    if (typeof(Storage) !== "undefined" && localStorage) {
+      var arr = loadScores();
+      arr.push({ s: score, t: Date.now() });
+      arr.sort(function(a, b) { return b.s - a.s; });
+      var top = arr.slice(0, 3);
+      localStorage.setItem('ham_poyo_scores', JSON.stringify(top));
+      return top;
+    }
+  } catch (error) {
+    console.log('saveScore error:', error);
+  }
+  return [{ s: score, t: Date.now() }];
+}
+
+function showBest() {
+  try {
+    var arr = loadScores();
+    var bestEls = [
+      document.getElementById('best1'),
+      document.getElementById('best2'),
+      document.getElementById('best3')
+    ];
+    bestEls.forEach(function(el, i) {
+      if (el) {
+        el.textContent = arr[i] ? arr[i].s : '-';
+      }
+    });
+  } catch (error) {
+    console.log('showBest error:', error);
+  }
+}
+
+// キーボード操作
+var keys = {};
+
+window.addEventListener('keydown', function(e) {
+  keys[e.code] = true;
+  if (['ArrowUp', 'Space', 'KeyR'].includes(e.code)) {
+    e.preventDefault();
+  }
+});
+
+window.addEventListener('keyup', function(e) {
+  if (keys[e.code]) {
+    keys[e.code] = false;
+    
+    if (e.code === 'ArrowLeft') moveLeft();
+    if (e.code === 'ArrowRight') moveRight();
+    if (e.code === 'ArrowDown') softDrop();
+    if (e.code === 'ArrowUp') rotate();
+    if (e.code === 'Space') hardDrop();
+    if (e.code === 'KeyR') restart();
+  }
+});
+
+// リサイズ
+window.addEventListener('resize', fit);
+
+// 初期化処理
+window.addEventListener('load', function() {
+  console.log('ページ読み込み完了');
+  console.log('startGame関数の確認:', typeof startGame);
+  console.log('selectStage関数の確認:', typeof selectStage);
+  console.log('showPokedex関数の確認:', typeof showPokedex);
+  updatePokedexCount();
+  
+  // ゲームスタートボタンのイベントリスナー追加
+  var gameStartBtn = document.getElementById('gameStartButton');
+  if (gameStartBtn) {
+    gameStartBtn.addEventListener('click', function() {
+      console.log('ゲームスタートボタンがクリックされました（イベントリスナー）');
+      startGame();
+    });
+    console.log('ゲームスタートボタンのイベントリスナーを設定しました');
+  } else {
+    console.error('ゲームスタートボタンが見つかりません');
+  }
+});
+
+console.log('全関数定義完了');
+</script>
+
   <style>
     :root{--bg:linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);--panel:#2a3f5f;--fg:#fff;--muted:#b8c6db;--btn:#34495e;--accent:#f39c12;--card-bg:#34495e;}
     html,body{margin:0;padding:0;background:var(--bg);color:var(--fg);font-family:system-ui,-apple-system,'Segoe UI',Roboto,'Hiragino Sans',sans-serif;min-height:100vh}
@@ -29,14 +1174,24 @@
     a:hover{text-decoration:underline}
     .pill{background:rgba(255,255,255,0.2);border-radius:999px;padding:6px 10px;font-size:12px;cursor:pointer;border:none;color:var(--fg);backdrop-filter:blur(10px)}
     .pill:hover{background:rgba(255,255,255,0.3)}
-    .overlay{position:fixed;inset:0;background:rgba(0,0,0,.6);display:none;align-items:center;justify-content:center;padding:16px;z-index:1000}
-    .card{background:var(--card-bg);border:1px solid rgba(255,255,255,0.1);border-radius:14px;max-width:520px;width:96%;padding:16px;box-shadow:0 12px 32px rgba(0,0,0,.4)}
-    .card h3{margin:4px 0 10px 0}
-    .row{display:flex;gap:8px;flex-wrap:wrap}
-    .row button{background:rgba(255,255,255,0.1);border:none;border-radius:8px;padding:8px 16px;color:var(--fg);font-weight:600;cursor:pointer}
-    .row button:hover{background:rgba(255,255,255,0.2)}
-    .scores{display:flex;gap:8px;margin:10px 0}
-    .scores span{background:rgba(255,255,255,0.1);border-radius:8px;padding:6px 10px;font-weight:700}
+    .overlay{position:fixed;inset:0;background:rgba(0,0,0,.7);display:none;align-items:center;justify-content:center;padding:16px;z-index:1000;backdrop-filter:blur(5px)}
+    .card{background:linear-gradient(135deg, #ff6b6b, #ffa500, #ff69b4, #9c88ff);border:3px solid rgba(255,255,255,0.9);border-radius:24px;max-width:520px;width:96%;padding:24px;box-shadow:0 20px 40px rgba(0,0,0,.5), 0 0 20px rgba(255,255,255,0.2);position:relative;overflow:hidden;animation:cardPop 0.5s ease-out}
+    @keyframes cardPop{0%{transform:scale(0.5) rotate(-5deg);opacity:0}50%{transform:scale(1.1) rotate(2deg)}100%{transform:scale(1) rotate(0deg);opacity:1}}
+    .card::before{content:'';position:absolute;top:-50%;left:-50%;width:200%;height:200%;background:linear-gradient(45deg, transparent, rgba(255,255,255,0.15), transparent);animation:shimmer 2s infinite;pointer-events:none}
+    @keyframes shimmer{0%{transform:translateX(-100%) translateY(-100%) rotate(45deg)}100%{transform:translateX(100%) translateY(100%) rotate(45deg)}}
+    .card h3{margin:8px 0 16px 0;font-size:32px;color:#fff;text-shadow:3px 3px 6px rgba(0,0,0,0.6);text-align:center;font-weight:bold;animation:titleBounce 0.8s ease-out 0.2s both}
+    @keyframes titleBounce{0%{transform:translateY(-20px);opacity:0}60%{transform:translateY(5px)}100%{transform:translateY(0);opacity:1}}
+    .card p{color:#fff;font-size:18px;text-shadow:2px 2px 4px rgba(0,0,0,0.6);text-align:center;margin:16px 0;animation:fadeInUp 0.6s ease-out 0.4s both}
+    @keyframes fadeInUp{0%{transform:translateY(20px);opacity:0}100%{transform:translateY(0);opacity:1}}
+    .row{display:flex;gap:16px;flex-wrap:wrap;justify-content:center;animation:fadeInUp 0.6s ease-out 0.6s both}
+    .row button{background:linear-gradient(135deg, #4facfe, #00f2fe);border:3px solid rgba(255,255,255,0.9);border-radius:20px;padding:14px 24px;color:#fff;font-weight:700;cursor:pointer;font-size:16px;text-shadow:1px 1px 2px rgba(0,0,0,0.4);transition:all 0.3s;box-shadow:0 6px 15px rgba(0,0,0,0.3);position:relative;overflow:hidden}
+    .row button::before{content:'';position:absolute;inset:0;background:linear-gradient(45deg, transparent, rgba(255,255,255,0.2), transparent);transform:translateX(-100%);transition:transform 0.6s}
+    .row button:hover::before{transform:translateX(100%)}
+    .row button:hover{transform:translateY(-3px) scale(1.05);box-shadow:0 10px 25px rgba(0,0,0,0.4);background:linear-gradient(135deg, #00f2fe, #4facfe)}
+    .row button:active{transform:translateY(-1px) scale(1.02)}
+    .scores{display:flex;gap:16px;margin:24px 0;justify-content:center;flex-wrap:wrap;animation:fadeInUp 0.6s ease-out 0.5s both}
+    .scores span{background:linear-gradient(135deg, rgba(255,255,255,0.95), rgba(255,255,255,0.8));color:#333;border-radius:16px;padding:10px 16px;font-weight:700;font-size:18px;box-shadow:0 4px 12px rgba(0,0,0,0.3);border:2px solid rgba(255,255,255,0.9);animation:scoreGlow 2s ease-in-out infinite alternate}
+    @keyframes scoreGlow{0%{box-shadow:0 4px 12px rgba(0,0,0,0.3)}100%{box-shadow:0 4px 12px rgba(255,255,255,0.4), 0 0 20px rgba(255,255,255,0.2)}}
     
     /* スタート画面 */
     .start-screen{text-align:center;padding:20px;background:rgba(255,255,255,0.1);border-radius:20px;margin:20px;backdrop-filter:blur(10px);box-shadow:0 8px 32px rgba(0,0,0,0.2)}
@@ -56,8 +1211,40 @@
     .share-btn:hover{background:rgba(255,255,255,0.3)}
     .share-btn.x-btn{background:rgba(0,0,0,0.3);border:1px solid rgba(255,255,255,0.2)}
     .share-btn.x-btn:hover{background:rgba(0,0,0,0.5)}
+    
+    /* ステージ選択 */
+    .stage-selection{margin:20px 0}
+    .stage-selection h3{color:#fff;margin-bottom:16px;text-shadow:2px 2px 4px rgba(0,0,0,0.3)}
+    .stage-buttons{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;max-width:400px;margin:0 auto}
+    .stage-btn{background:rgba(255,255,255,0.1);border:2px solid rgba(255,255,255,0.2);border-radius:12px;padding:12px 8px;cursor:pointer;color:#fff;display:flex;flex-direction:column;align-items:center;gap:4px;backdrop-filter:blur(10px);transition:all 0.3s}
+    .stage-btn:hover{background:rgba(255,255,255,0.2);border-color:rgba(255,255,255,0.4)}
+    .stage-btn.active{background:linear-gradient(135deg,#f39c12,#e67e22);border-color:#f39c12;box-shadow:0 4px 12px rgba(243,156,18,.3)}
+    .stage-icon{font-size:24px}
+    .stage-name{font-weight:bold;font-size:14px}
     .game-area{display:none}
     .game-area.active{display:flex;flex-direction:column;align-items:center;gap:10px}
+    
+    /* 図鑑画面 */
+    .pokedex-card{max-width: 600px; max-height: 80vh; overflow-y: auto;}
+    .pokedex-grid{display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; margin: 20px 0;}
+    .pokedex-entry{border-radius: 12px; padding: 12px; text-align: center; color: white; font-size: 12px; border: 2px solid; transition: all 0.3s; position: relative;}
+    .pokedex-entry.discovered{background: linear-gradient(135deg, #4facfe, #00f2fe); border-color: rgba(255,255,255,0.8);}
+    .pokedex-entry.discovered:hover{transform: translateY(-2px) scale(1.02); box-shadow: 0 8px 20px rgba(79, 172, 254, 0.4);}
+    .pokedex-entry.undiscovered{background: rgba(255,255,255,0.1); border-color: rgba(255,255,255,0.3);}
+    .pokedex-image{transition: transform 0.3s;}
+    .pokedex-entry.discovered:hover .pokedex-image{transform: scale(1.1);}
+    
+    /* 詳細画面のボタンスタイル */
+    .detail-btn{transition: all 0.3s; position: relative; overflow: hidden;}
+    .detail-btn::before{content: ''; position: absolute; inset: 0; background: linear-gradient(45deg, transparent, rgba(255,255,255,0.2), transparent); transform: translateX(-100%); transition: transform 0.6s;}
+    .detail-btn:hover::before{transform: translateX(100%);}
+    .detail-btn:hover{transform: translateY(-2px); box-shadow: 0 6px 16px rgba(0,0,0,0.3);}
+    
+    /* レスポンシブ対応 */
+    @media (max-width: 480px) {
+      .pokedex-grid{grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 8px;}
+      .pokedex-entry{padding: 8px; font-size: 11px;}
+    }
   </style>
 </head>
 <body>
@@ -80,8 +1267,36 @@
       連鎖でスコアアップ！
     </div>
     
-    <button id="startBtn" class="start-btn">
+    <!-- ステージ選択 -->
+    <div class="stage-selection">
+      <h3>🌸 ステージを選んでね 🌸</h3>
+      <div class="stage-buttons">
+        <button class="stage-btn active" onclick="selectStage(0)">
+          <span class="stage-icon">🌸</span>
+          <span class="stage-name">春のケツ</span>
+        </button>
+        <button class="stage-btn" onclick="selectStage(1)">
+          <span class="stage-icon">🌻</span>
+          <span class="stage-name">夏のケツ</span>
+        </button>
+        <button class="stage-btn" onclick="selectStage(2)">
+          <span class="stage-icon">🍂</span>
+          <span class="stage-name">秋のケツ</span>
+        </button>
+        <button class="stage-btn" onclick="selectStage(3)">
+          <span class="stage-icon">❄️</span>
+          <span class="stage-name">冬のケツ</span>
+        </button>
+      </div>
+    </div>
+    
+    <button class="start-btn" onclick="console.log('スタートボタンクリック'); startGame();">
       ゲームスタート
+    </button>
+    
+    <!-- 図鑑ボタン -->
+    <button class="start-btn" onclick="showPokedex()" style="font-size: 16px; padding: 12px 24px; margin: 10px 0; background: linear-gradient(135deg, #9c88ff, #6c5ce7);">
+      📖 図鑑を見る (<span id="pokedexCount">0/24</span>)
     </button>
     
     <a href="https://youtube.com/@hamuchira" target="_blank" class="youtube-link">
@@ -89,12 +1304,12 @@
     </a>
     
     <div class="share-buttons">
-      <button id="shareX" class="share-btn x-btn">
+      <button class="share-btn x-btn" onclick="shareToX()">
         Xでシェア
       </button>
-      <button id="copyUrl" class="share-btn">
+      <button class="share-btn" onclick="copyURL()">
         <span>📋</span>
-        <span>URLコピー</span>
+        <span id="copyText">URLコピー</span>
       </button>
     </div>
   </div>
@@ -109,18 +1324,18 @@
       <div>スコア: <span id="score">0</span></div>
       <div>チェイン: <span id="chain">0</span></div>
       <div id="timeWrap" class="muted" style="display:none;">残り: <span id="time">180</span>s</div>
-      <button id="mode" class="pill" title="制限時間モード切替">制限時間:OFF</button>
+      <button id="mode" class="pill" title="制限時間モード切替" onclick="toggleTimeMode()">制限時間:OFF</button>
     </div>
 
     <canvas id="game" width="384" height="640"></canvas>
 
     <div class="btnbar" aria-label="タップ操作">
-      <button id="rotL">↺</button>
-      <button id="left">←</button>
-      <button id="down">↓</button>
-      <button id="right">→</button>
-      <button id="rotR">↻</button>
-      <button id="drop" class="wide">瞬間落下</button>
+      <button onclick="rotate()">↺</button>
+      <button onclick="moveLeft()">←</button>
+      <button onclick="softDrop()">↓</button>
+      <button onclick="moveRight()">→</button>
+      <button onclick="rotate()">↻</button>
+      <button class="wide" onclick="hardDrop()">瞬間落下</button>
     </div>
 
     <div class="note">
@@ -129,922 +1344,35 @@
   </div>
 </div>
 
-<!-- Overlays -->
-<div id="overlay" class="overlay">
+<!-- 図鑑画面オーバーレイ -->
+<div id="pokedexScreen" class="overlay">
+  <div class="card pokedex-card">
+    <h3>📖 はむケツ図鑑 📖</h3>
+    <p>はむケツを30個消すと図鑑に登録されます！</p>
+    
+    <div id="pokedexGrid" class="pokedex-grid">
+      <!-- 図鑑エントリがここに動的生成される -->
+    </div>
+    
+    <div class="row" style="margin-top: 20px;">
+      <button onclick="closePokedex()" style="background: linear-gradient(135deg, #ff6b6b, #ff8e8e);">閉じる</button>
+    </div>
+  </div>
+</div>
+
+<!-- ゲームオーバー・クリア画面オーバーレイ -->
+<div id="gameOverlay" class="overlay">
   <div class="card" role="dialog" aria-modal="true">
     <h3 id="ovTitle">結果</h3>
     <p id="ovMsg"></p>
     <div class="scores">ベスト: <span id="best1">-</span><span id="best2">-</span><span id="best3">-</span></div>
     <div class="row" style="margin-top:10px">
-      <button id="retry">リトライ</button>
-      <button id="giveUp">諦める</button>
-      <button id="shareResult">結果をXでシェア</button>
+      <button onclick="restart()">リトライ</button>
+      <button onclick="backToStart()">諦める</button>
+      <button onclick="shareResult()">結果をXでシェア</button>
     </div>
     <div id="shareAlt" class="note" style="display:none;margin-top:8px"></div>
   </div>
 </div>
-
-<script>
-(function() {
-  'use strict';
-  
-  // サービスワーカー登録
-  if ('serviceWorker' in navigator) {
-    window.addEventListener('load', () => {
-      navigator.serviceWorker.register('sw.js')
-        .then((registration) => {
-          console.log('サービスワーカー登録成功:', registration.scope);
-        })
-        .catch((error) => {
-          console.log('サービスワーカー登録失敗:', error);
-        });
-    });
-  }
-
-  // アプリアイコン読み込み
-  const icon = new Image();
-  icon.onload = () => {
-    const iconElement = document.getElementById('appicon');
-    iconElement.src = icon.src;
-    iconElement.classList.add('ready');
-    console.log('アプリアイコン ketsupoyo.png が読み込まれました');
-  };
-  icon.onerror = () => {
-    console.log('アプリアイコン ketsupoyo.png が見つかりません（任意）- スタート画面とPWAアイコンに使用されます');
-  };
-  icon.src = 'ketsupoyo.png';
-
-  // PWAインストール（より積極的な自動プロンプト）
-  let deferredPrompt;
-  let installPromptShown = false;
-
-  window.addEventListener('beforeinstallprompt', (e) => {
-    console.log('PWAインストールプロンプト準備完了');
-    e.preventDefault();
-    deferredPrompt = e;
-    const installBtn = document.getElementById('installBtn');
-    installBtn.style.display = 'inline-flex';
-    
-    // より早く自動プロンプトを表示（2秒後）
-    if (!installPromptShown) {
-      setTimeout(() => {
-        if (deferredPrompt && !installPromptShown) {
-          console.log('自動インストールプロンプト表示');
-          showInstallPrompt();
-        }
-      }, 2000);
-    }
-  });
-
-  // ページロード時にもチェック
-  window.addEventListener('load', () => {
-    console.log('ページロード完了');
-    // サービスワーカーがない場合の代替手段
-    if (!deferredPrompt && !installPromptShown) {
-      setTimeout(() => {
-        if (!installPromptShown) {
-          console.log('手動インストール案内表示');
-          alert('📱 このアプリをホーム画面に追加できます！\nブラウザのメニューから「ホーム画面に追加」を選択してください。');
-          installPromptShown = true;
-        }
-      }, 3000);
-    }
-  });
-
-  async function showInstallPrompt() {
-    if (deferredPrompt && !installPromptShown) {
-      installPromptShown = true;
-      try {
-        deferredPrompt.prompt();
-        const { outcome } = await deferredPrompt.userChoice;
-        console.log(`インストール結果: ${outcome}`);
-        deferredPrompt = null;
-      } catch (error) {
-        console.log('インストールプロンプトエラー:', error);
-      }
-    }
-  }
-
-  document.getElementById('installBtn').addEventListener('click', async () => {
-    if (deferredPrompt) {
-      await showInstallPrompt();
-    } else {
-      // より詳細なフォールバック説明
-      const userAgent = navigator.userAgent;
-      let instruction = '';
-      
-      if (userAgent.includes('Chrome')) {
-        instruction = 'Chrome: 右上メニュー（⋮）→「ホーム画面に追加」';
-      } else if (userAgent.includes('Safari')) {
-        instruction = 'Safari: 画面下部の共有ボタン（□↗）→「ホーム画面に追加」';
-      } else {
-        instruction = 'ブラウザのメニューから「ホーム画面に追加」を選択してください';
-      }
-      
-      alert(`📱 ${instruction}`);
-    }
-  });
-
-  // UI要素
-  const startScreen = document.getElementById('startScreen');
-  const gameArea = document.getElementById('gameArea');
-  const startBtn = document.getElementById('startBtn');
-  const shareXBtn = document.getElementById('shareX');
-  const copyUrlBtn = document.getElementById('copyUrl');
-  
-  const canvas = document.getElementById('game');
-  const ctx = canvas.getContext('2d');
-  const W = canvas.width;
-  const H = canvas.height;
-
-  // ゲーム設定
-  const COLS = 6;
-  const ROWS = 12;
-  const TILE = Math.floor(Math.min(W / COLS, H / ROWS));
-  const PX = Math.floor((W - COLS * TILE) / 2);
-  const PY = Math.floor((H - ROWS * TILE) / 2);
-  const TYPES = 6;
-  const COLORS = ['#f5c6a5', '#e0f0ff', '#c6d0ff', '#ffd9d9', '#c0ffc8', '#ffe6a8'];
-
-  // はむケツ画像読み込み
-  const hamImages = Array.from({length: TYPES}, (_, i) => new Image());
-  let useImages = false;
-  let loadedImages = 0;
-
-  hamImages.forEach((img, i) => {
-    img.onload = () => {
-      loadedImages++;
-      console.log(`はむケツ画像 ${i + 1}/6 読み込み完了: assets/ham_${String(i + 1).padStart(2, '0')}.png`);
-      if (loadedImages === TYPES) {
-        useImages = true;
-        console.log('全てのはむケツ画像が読み込まれました！');
-      }
-    };
-    img.onerror = () => {
-      console.log(`はむケツ画像が見つかりません: assets/ham_${String(i + 1).padStart(2, '0')}.png（カラー円で代用）`);
-    };
-    img.src = `assets/ham_${String(i + 1).padStart(2, '0')}.png`;
-  });
-
-  // ゲーム状態
-  let gameStarted = false;
-  let grid;
-  let falling;
-  let nextPair;
-  let score = 0;
-  let chain = 0;
-  let gameOver = false;
-  let timeMode = false;
-  let timeLeft = 180000;
-  let dropTimer = 0;
-  
-  // エフェクト用
-  let resolving = false;
-  let phase = 0;
-  let phaseTimer = 0;
-  let particles = [];
-
-  // UI要素
-  const timeEl = document.getElementById('time');
-  const timeWrap = document.getElementById('timeWrap');
-  const modeBtn = document.getElementById('mode');
-
-  // キャンバスサイズ調整（PC・スマホ対応）
-  function fit() {
-    if (!gameStarted) return;
-    
-    const availableWidth = window.innerWidth - 16;
-    const availableHeight = window.innerHeight - 280;
-    
-    // PC用の最大サイズ制限
-    const maxWidth = 500; // PC用最大幅
-    const maxHeight = 800; // PC用最大高さ
-    
-    const scaleByWidth = Math.min(availableWidth, maxWidth) / W;
-    const scaleByHeight = Math.min(availableHeight, maxHeight) / H;
-    const scale = Math.min(scaleByWidth, scaleByHeight);
-    
-    // スマホでは画面幅の90%、PCでは適度なサイズに
-    const isSmallScreen = window.innerWidth <= 768;
-    const finalScale = isSmallScreen ? 
-      Math.max(scale, availableWidth / W * 0.9) : 
-      Math.max(scale, 0.8);
-    
-    canvas.style.width = (W * finalScale) + 'px';
-    canvas.style.height = (H * finalScale) + 'px';
-    
-    const btnBar = document.querySelector('.btnbar');
-    btnBar.style.maxWidth = (W * finalScale) + 'px';
-    btnBar.style.width = (W * finalScale) + 'px';
-  }
-  window.addEventListener('resize', fit);
-
-  // 基本関数
-  function empty() {
-    return { type: 0, mark: false, seed: Math.random() * 1000 };
-  }
-
-  function resetGrid() {
-    return Array.from({ length: ROWS }, () => 
-      Array.from({ length: COLS }, empty)
-    );
-  }
-
-  function randomType() {
-    return 1 + Math.floor(Math.random() * TYPES);
-  }
-
-  function newPair() {
-    return {
-      cx: Math.floor(COLS / 2),
-      cy: -1,
-      blocks: [
-        { dx: 0, dy: 0, type: randomType() },
-        { dx: 0, dy: -1, type: randomType() }
-      ],
-      rot: 0
-    };
-  }
-
-  function restart() {
-    grid = resetGrid();
-    score = 0;
-    chain = 0;
-    gameOver = false;
-    dropTimer = 0;
-    resolving = false;
-    phase = 0;
-    phaseTimer = 0;
-    particles = [];
-    
-    falling = newPair();
-    nextPair = newPair();
-    
-    updateHUD();
-    hideOverlay();
-  }
-
-  function updateHUD() {
-    document.getElementById('score').textContent = score;
-    document.getElementById('chain').textContent = chain;
-  }
-
-  // 移動可能判定
-  function canMove(pair, dx, dy) {
-    for (const block of pair.blocks) {
-      const x = pair.cx + block.dx + dx;
-      const y = pair.cy + block.dy + dy;
-      
-      if (x < 0 || x >= COLS || y >= ROWS) {
-        return false;
-      }
-      
-      if (y >= 0 && grid[y][x].type) {
-        return false;
-      }
-    }
-    return true;
-  }
-
-  // 回転後の位置
-  function getRotatedBlocks(rot, type0, type1) {
-    const block0 = { dx: 0, dy: 0, type: type0 };
-    const block1 = { dx: 0, dy: -1, type: type1 };
-    
-    if (rot === 1) { block1.dx = 1; block1.dy = 0; }
-    if (rot === 2) { block1.dx = 0; block1.dy = 1; }
-    if (rot === 3) { block1.dx = -1; block1.dy = 0; }
-    
-    return [block0, block1];
-  }
-
-  // 操作関数
-  function moveLeft() {
-    if (!falling || gameOver || resolving) return;
-    if (canMove(falling, -1, 0)) {
-      falling.cx -= 1;
-    }
-  }
-
-  function moveRight() {
-    if (!falling || gameOver || resolving) return;
-    if (canMove(falling, 1, 0)) {
-      falling.cx += 1;
-    }
-  }
-
-  function softDrop() {
-    if (!falling || gameOver || resolving) return;
-    if (canMove(falling, 0, 1)) {
-      falling.cy += 1;
-    } else {
-      lockPiece();
-    }
-  }
-
-  function hardDrop() {
-    if (!falling || gameOver || resolving) return;
-    while (canMove(falling, 0, 1)) {
-      falling.cy += 1;
-    }
-    lockPiece();
-  }
-
-  function rotate() {
-    if (!falling || gameOver || resolving) return;
-    
-    const nextRot = (falling.rot + 1) % 4;
-    const newBlocks = getRotatedBlocks(
-      nextRot, 
-      falling.blocks[0].type, 
-      falling.blocks[1].type
-    );
-    
-    const tempPair = {
-      ...falling,
-      blocks: newBlocks,
-      rot: nextRot
-    };
-    
-    if (canMove(tempPair, 0, 0)) {
-      falling.blocks = newBlocks;
-      falling.rot = nextRot;
-    }
-  }
-
-  // ピース固定
-  function lockPiece() {
-    // 各ブロックを個別に配置（ペアの連結を完全に解除）
-    for (const block of falling.blocks) {
-      const x = falling.cx + block.dx;
-      const y = falling.cy + block.dy;
-      
-      if (y < 0) {
-        gameOverNow('上まで積み上がりました…');
-        return;
-      }
-      
-      // 完全に独立したブロックとして配置
-      grid[y][x] = { 
-        type: block.type, 
-        mark: false, 
-        seed: Math.random() * 1000 // 各ブロック独自のseed
-      };
-    }
-    
-    falling = null;
-    resolving = true;
-    phase = 0;
-    phaseTimer = 0;
-  }
-
-  // エフェクト処理
-  function processResolving() {
-    phaseTimer += 16;
-    
-    if (phase === 0) {
-      scanForMatches();
-    } else if (phase === 1) {
-      if (phaseTimer >= 500) {
-        phase = 2;
-        phaseTimer = 0;
-      }
-    } else if (phase === 2) {
-      // 消去フェーズ（300ms）
-      if (phaseTimer >= 300) {
-        clearMarkedBlocks();
-        dropBlocks();
-        
-        // 少し待ってから次のスキャン
-        phase = 0;
-        phaseTimer = 0;
-        setTimeout(() => {
-          if (resolving) {
-            scanForMatches();
-          }
-        }, 150);
-      }
-    }
-  }
-
-  function scanForMatches() {
-    for (let r = 0; r < ROWS; r++) {
-      for (let c = 0; c < COLS; c++) {
-        grid[r][c].mark = false;
-      }
-    }
-
-    const visited = Array.from({ length: ROWS }, () => Array(COLS).fill(false));
-    const directions = [[1, 0], [-1, 0], [0, 1], [0, -1]];
-    let totalCleared = 0;
-
-    function floodFill(startR, startC) {
-      const type = grid[startR][startC].type;
-      const queue = [[startR, startC]];
-      const cells = [[startR, startC]];
-      visited[startR][startC] = true;
-
-      while (queue.length > 0) {
-        const [r, c] = queue.shift();
-        
-        for (const [dr, dc] of directions) {
-          const nr = r + dr;
-          const nc = c + dc;
-          
-          if (nr >= 0 && nr < ROWS && nc >= 0 && nc < COLS &&
-              !visited[nr][nc] && grid[nr][nc].type === type) {
-            visited[nr][nc] = true;
-            queue.push([nr, nc]);
-            cells.push([nr, nc]);
-          }
-        }
-      }
-      
-      return cells;
-    }
-
-    for (let r = 0; r < ROWS; r++) {
-      for (let c = 0; c < COLS; c++) {
-        if (!visited[r][c] && grid[r][c].type) {
-          const cells = floodFill(r, c);
-          if (cells.length >= 4) {
-            totalCleared += cells.length;
-            cells.forEach(([rr, cc]) => {
-              grid[rr][cc].mark = true;
-              spawnBurst(PX + cc * TILE + TILE / 2, PY + rr * TILE + TILE / 2, grid[rr][cc].type);
-            });
-          }
-        }
-      }
-    }
-
-    if (totalCleared > 0) {
-      phase = 1;
-      phaseTimer = 0;
-      chain++;
-    } else {
-      resolving = false;
-      falling = nextPair;
-      nextPair = newPair();
-      
-      let hasBlocks = false;
-      for (let r = 0; r < ROWS; r++) {
-        for (let c = 0; c < COLS; c++) {
-          if (grid[r][c].type) {
-            hasBlocks = true;
-            break;
-          }
-        }
-        if (hasBlocks) break;
-      }
-      
-      if (!hasBlocks) {
-        clearNow();
-      }
-      
-      updateHUD();
-    }
-  }
-
-  function clearMarkedBlocks() {
-    let clearedCount = 0;
-    
-    for (let r = 0; r < ROWS; r++) {
-      for (let c = 0; c < COLS; c++) {
-        if (grid[r][c].mark) {
-          grid[r][c] = empty();
-          clearedCount++;
-        }
-      }
-    }
-    
-    if (clearedCount > 0) {
-      const points = clearedCount * 10 * (chain > 1 ? chain : 1);
-      score += points;
-      updateHUD();
-    }
-  }
-
-  // ブロック落下（重力処理）- 個別ブロック対応
-  function dropBlocks() {
-    let hasMoved = false;
-    
-    // 各ブロックを個別に処理（ペアの連結を解除）
-    for (let c = 0; c < COLS; c++) {
-      for (let r = ROWS - 2; r >= 0; r--) { // 最下段は除く
-        if (grid[r][c].type !== 0 && grid[r + 1][c].type === 0) {
-          // 1つ下に落とす（個別のブロックとして）
-          grid[r + 1][c] = { 
-            type: grid[r][c].type, 
-            mark: false, 
-            seed: Math.random() * 1000 // 新しいseedで個別化
-          };
-          grid[r][c] = empty();
-          hasMoved = true;
-        }
-      }
-    }
-    
-    // まだ落ちるブロックがあれば再帰的に処理
-    if (hasMoved) {
-      setTimeout(() => dropBlocks(), 50);
-    }
-  }
-
-  // パーティクル
-  function spawnBurst(x, y, type) {
-    const numParticles = 12;
-    for (let i = 0; i < numParticles; i++) {
-      const angle = (Math.PI * 2 * i) / numParticles;
-      const speed = 3 + Math.random() * 4;
-      particles.push({
-        x, y,
-        vx: Math.cos(angle) * speed,
-        vy: Math.sin(angle) * speed - 2,
-        life: 0,
-        maxLife: 600 + Math.random() * 400,
-        type,
-        size: TILE * (0.3 + Math.random() * 0.2)
-      });
-    }
-  }
-
-  function updateParticles(dt) {
-    const gravity = 0.015;
-    
-    particles.forEach(p => {
-      p.life += dt;
-      p.x += p.vx * dt * 0.1;
-      p.y += p.vy * dt * 0.1;
-      p.vy += gravity * dt;
-    });
-    
-    particles = particles.filter(p => p.life < p.maxLife);
-  }
-
-  // 描画
-  function drawBlob(x, y, size, type, alpha = 1, shakeX = 0, shakeY = 0, scale = 1) {
-    ctx.save();
-    ctx.globalAlpha = alpha;
-    
-    const cx = x + size / 2 + shakeX;
-    const cy = y + size / 2 + shakeY;
-    
-    if (scale !== 1) {
-      ctx.translate(cx, cy);
-      ctx.scale(scale, scale);
-      ctx.translate(-cx, -cy);
-    }
-    
-    // はむケツ画像があれば画像を表示、なければ円を表示
-    if (useImages && hamImages[type - 1] && hamImages[type - 1].complete) {
-      ctx.drawImage(hamImages[type - 1], x + shakeX, y + shakeY, size, size);
-    } else {
-      // フォールバック：カラー円
-      const r = size * 0.45;
-      
-      const grad = ctx.createRadialGradient(
-        cx - r * 0.4, cy - r * 0.4, r * 0.2,
-        cx, cy, r
-      );
-      const base = COLORS[(type - 1) % COLORS.length];
-      grad.addColorStop(0, '#ffffff');
-      grad.addColorStop(0.15, base);
-      grad.addColorStop(1, '#333');
-      
-      ctx.fillStyle = grad;
-      ctx.beginPath();
-      ctx.arc(cx, cy, r, 0, Math.PI * 2);
-      ctx.fill();
-      
-      ctx.fillStyle = 'rgba(255,255,255,0.6)';
-      ctx.beginPath();
-      ctx.arc(cx + r * 0.3, cy - r * 0.2, r * 0.15, 0, Math.PI * 2);
-      ctx.fill();
-    }
-    
-    ctx.restore();
-  }
-
-  function drawParticles() {
-    for (const p of particles) {
-      const alpha = Math.max(0, 1 - (p.life / p.maxLife));
-      const size = p.size * alpha;
-      
-      ctx.save();
-      ctx.globalAlpha = alpha;
-      
-      // はむケツ画像があれば小さな画像、なければ円
-      if (useImages && hamImages[p.type - 1] && hamImages[p.type - 1].complete) {
-        const imgSize = size * 0.3;
-        ctx.drawImage(hamImages[p.type - 1], p.x - imgSize/2, p.y - imgSize/2, imgSize, imgSize);
-      } else {
-        ctx.fillStyle = COLORS[(p.type - 1) % COLORS.length];
-        ctx.beginPath();
-        ctx.arc(p.x, p.y, size * 0.15, 0, Math.PI * 2);
-        ctx.fill();
-      }
-      
-      ctx.restore();
-    }
-  }
-
-  function draw() {
-    if (!gameStarted) return;
-    
-    ctx.fillStyle = '#0f1220';
-    ctx.fillRect(0, 0, W, H);
-    
-    for (let r = 0; r < ROWS; r++) {
-      for (let c = 0; c < COLS; c++) {
-        ctx.fillStyle = 'rgba(255,255,255,0.03)';
-        ctx.fillRect(PX + c * TILE + 1, PY + r * TILE + 1, TILE - 2, TILE - 2);
-      }
-    }
-    
-    for (let r = 0; r < ROWS; r++) {
-      for (let c = 0; c < COLS; c++) {
-        const cell = grid[r][c];
-        if (cell.type) {
-          let alpha = 1, shakeX = 0, shakeY = 0, scale = 1;
-          
-          if (cell.mark) {
-            if (phase === 1) {
-              const amp = TILE * 0.1;
-              const t = (phaseTimer + cell.seed * 15) * 0.02;
-              shakeX = Math.sin(t) * amp;
-              shakeY = Math.cos(t * 1.3) * amp;
-            } else if (phase === 2) {
-              const progress = phaseTimer / 300;
-              scale = 1 + progress * 0.5;
-              alpha = 1 - progress * 0.8;
-            }
-          }
-          
-          drawBlob(PX + c * TILE, PY + r * TILE, TILE, cell.type, alpha, shakeX, shakeY, scale);
-        }
-      }
-    }
-    
-    if (falling) {
-      for (const block of falling.blocks) {
-        const x = falling.cx + block.dx;
-        const y = falling.cy + block.dy;
-        if (y >= 0) {
-          drawBlob(PX + x * TILE, PY + y * TILE, TILE, block.type);
-        }
-      }
-    }
-    
-    ctx.strokeStyle = 'rgba(255,255,255,0.2)';
-    ctx.lineWidth = 2;
-    ctx.strokeRect(PX - 1, PY - 1, COLS * TILE + 2, ROWS * TILE + 2);
-    
-    drawParticles();
-  }
-
-  // 更新
-  function update(dt) {
-    if (!gameStarted || gameOver) return;
-
-    updateParticles(dt);
-
-    if (resolving) {
-      processResolving();
-      return;
-    }
-
-    dropTimer += dt;
-    const fallInterval = Math.max(150, 800 - Math.floor(score / 200) * 30);
-    
-    if (dropTimer >= fallInterval) {
-      dropTimer = 0;
-      if (falling) {
-        softDrop();
-      }
-    }
-
-    if (timeMode) {
-      timeLeft -= dt;
-      if (timeLeft <= 0) {
-        gameOverNow('時間切れ…');
-        return;
-      }
-      timeEl.textContent = Math.max(0, Math.ceil(timeLeft / 1000));
-    }
-  }
-
-  // メインループ
-  function loop(now) {
-    const dt = now - (loop.last || now);
-    loop.last = now;
-    
-    update(dt);
-    draw();
-    
-    requestAnimationFrame(loop);
-  }
-
-  // キーボード操作
-  const keys = {};
-  window.addEventListener('keydown', e => {
-    keys[e.code] = true;
-    if (['ArrowUp', 'Space', 'KeyR'].includes(e.code)) {
-      e.preventDefault();
-    }
-  });
-  
-  window.addEventListener('keyup', e => {
-    if (keys[e.code]) {
-      keys[e.code] = false;
-      
-      if (e.code === 'ArrowLeft') moveLeft();
-      if (e.code === 'ArrowRight') moveRight();
-      if (e.code === 'ArrowDown') softDrop();
-      if (e.code === 'ArrowUp') rotate();
-      if (e.code === 'Space') hardDrop();
-      if (e.code === 'KeyR') restart();
-    }
-  });
-
-  // ボタン操作
-  function bindButton(id, fn, repeat = true) {
-    const el = document.getElementById(id);
-    if (!el) return;
-    
-    let timer;
-    
-    const press = () => {
-      fn();
-      if (repeat) {
-        timer = setInterval(fn, 120);
-      }
-    };
-    
-    const release = () => {
-      clearInterval(timer);
-    };
-    
-    el.addEventListener('touchstart', e => {
-      e.preventDefault();
-      press();
-    });
-    
-    el.addEventListener('touchend', e => {
-      e.preventDefault();
-      release();
-    });
-    
-    el.addEventListener('mousedown', press);
-    el.addEventListener('mouseup', release);
-    el.addEventListener('mouseleave', release);
-  }
-
-  bindButton('left', moveLeft);
-  bindButton('right', moveRight);
-  bindButton('down', softDrop);
-  bindButton('rotL', rotate);
-  bindButton('rotR', rotate);
-  bindButton('drop', hardDrop, false);
-
-  // 制限時間モード切替
-  modeBtn.addEventListener('click', () => {
-    timeMode = !timeMode;
-    if (timeMode) {
-      timeLeft = 180000;
-      timeWrap.style.display = 'inline';
-      modeBtn.textContent = '制限時間:ON';
-    } else {
-      timeWrap.style.display = 'none';
-      modeBtn.textContent = '制限時間:OFF';
-    }
-  });
-
-  // ゲームスタート
-  startBtn.addEventListener('click', () => {
-    startScreen.style.display = 'none';
-    gameArea.classList.add('active');
-    gameStarted = true;
-    fit();
-    restart();
-    requestAnimationFrame(loop);
-  });
-
-  // Xシェアボタン
-  shareXBtn.addEventListener('click', () => {
-    const text = encodeURIComponent('はむケツぽよぽよで遊んでみてね！🐹✨\nはむケツを4個以上つなげて、ぷるぷる消すパズルゲーム\n\n#はむチラ #はむケツぽよぽよ');
-    const url = encodeURIComponent('https://hamuchiranagaya.github.io/ketsu-poyo/');
-    window.open(`https://twitter.com/intent/tweet?text=${text}&url=${url}`, '_blank');
-  });
-
-  // URLコピーボタン
-  copyUrlBtn.addEventListener('click', async () => {
-    const gameUrl = 'https://hamuchiranagaya.github.io/ketsu-poyo/';
-    try {
-      await navigator.clipboard.writeText(gameUrl);
-      copyUrlBtn.innerHTML = '<span>✅</span><span>コピー完了</span>';
-      setTimeout(() => {
-        copyUrlBtn.innerHTML = '<span>📋</span><span>URLコピー</span>';
-      }, 2000);
-    } catch (err) {
-      // フォールバック
-      const textArea = document.createElement('textarea');
-      textArea.value = gameUrl;
-      document.body.appendChild(textArea);
-      textArea.select();
-      document.execCommand('copy');
-      document.body.removeChild(textArea);
-      copyUrlBtn.innerHTML = '<span>✅</span><span>コピー完了</span>';
-      setTimeout(() => {
-        copyUrlBtn.innerHTML = '<span>📋</span><span>URLコピー</span>';
-      }, 2000);
-    }
-  });
-
-  // スコア管理
-  function loadScores() {
-    try {
-      return JSON.parse(localStorage.getItem('ham_poyo_scores') || '[]');
-    } catch {
-      return [];
-    }
-  }
-
-  function saveScore(sc) {
-    const arr = loadScores();
-    arr.push({ s: sc, t: Date.now() });
-    arr.sort((a, b) => b.s - a.s);
-    const top = arr.slice(0, 3);
-    localStorage.setItem('ham_poyo_scores', JSON.stringify(top));
-    return top;
-  }
-
-  function showBest() {
-    const arr = loadScores();
-    const bestEls = [
-      document.getElementById('best1'),
-      document.getElementById('best2'),
-      document.getElementById('best3')
-    ];
-    bestEls.forEach((el, i) => {
-      el.textContent = arr[i] ? arr[i].s : '-';
-    });
-  }
-
-  // オーバーレイ
-  function showOverlay(title, msg) {
-    const overlay = document.getElementById('overlay');
-    const ovTitle = document.getElementById('ovTitle');
-    const ovMsg = document.getElementById('ovMsg');
-    
-    ovTitle.textContent = title;
-    ovMsg.textContent = msg;
-    showBest();
-    overlay.style.display = 'flex';
-  }
-
-  function hideOverlay() {
-    const overlay = document.getElementById('overlay');
-    overlay.style.display = 'none';
-  }
-
-  function gameOverNow(reason) {
-    gameOver = true;
-    saveScore(score);
-    showOverlay('Game Over', `${reason} スコア: ${score}`);
-  }
-
-  function clearNow() {
-    gameOver = true;
-    saveScore(score);
-    showOverlay('クリア！', `全部消しました！ スコア: ${score}`);
-  }
-
-  function backToStart() {
-    gameStarted = false;
-    gameArea.classList.remove('active');
-    startScreen.style.display = 'block';
-    hideOverlay();
-  }
-
-  // イベントリスナー
-  document.getElementById('retry').addEventListener('click', () => {
-    restart();
-  });
-  
-  document.getElementById('giveUp').addEventListener('click', () => {
-    backToStart();
-  });
-
-  document.getElementById('shareResult').addEventListener('click', async () => {
-    const text = encodeURIComponent(`はむケツぽよぽよでスコア ${score} 点を記録！🐹✨\nはむケツを4個以上つなげて、ぷるぷる消すパズルゲーム\n\n#はむチラ #はむケツぽよぽよ`);
-    const url = encodeURIComponent('https://hamuchiranagaya.github.io/ketsu-poyo/');
-    window.open(`https://twitter.com/intent/tweet?text=${text}&url=${url}`, '_blank');
-  });
-
-  // 初期化
-  fit();
-})();
-</script>
 </body>
 </html>
