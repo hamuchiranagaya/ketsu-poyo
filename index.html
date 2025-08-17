@@ -3,6 +3,9 @@
 <head>
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
   <title>はむケツぽよぽよ</title>
   <link rel="manifest" href="manifest.json">
   <meta name="theme-color" content="#4facfe">
@@ -246,11 +249,24 @@ function showPokedex() {
     entryDiv.style.cursor = entry.discovered ? 'pointer' : 'default';
     
     if (entry.discovered) {
+      // 発見済みの場合
+      var imageDisplay = '';
+      var imageTypeIndex = ((i - 1) % 6); // 0-5の範囲
+      
+      console.log('図鑑エントリ' + i + ' - 画像インデックス:', imageTypeIndex, 'useImages:', useImages);
+      
+      // 画像が利用可能かチェック（より緩い条件）
+      if (useImages && hamImages[imageTypeIndex] && hamImages[imageTypeIndex].src) {
+        imageDisplay = '<img src="' + hamImages[imageTypeIndex].src + '" style="width: 40px; height: 40px; border-radius: 8px;" onerror="this.style.display=\'none\'; this.nextElementSibling.style.display=\'block\';">' +
+                      '<div style="font-size: 32px; display: none;">' + stageIcons[stageIndex] + '</div>';
+      } else {
+        // フォールバック：ステージアイコン
+        imageDisplay = '<div style="font-size: 32px;">' + stageIcons[stageIndex] + '</div>';
+      }
+      
       entryDiv.innerHTML = 
         '<div class="pokedex-image" style="font-size: 32px; margin-bottom: 8px; height: 40px; display: flex; align-items: center; justify-content: center;">' + 
-        (useImages && hamImages[((i-1) % 6)] && hamImages[((i-1) % 6)].complete ? 
-          '<img src="' + hamImages[((i-1) % 6)].src + '" style="width: 40px; height: 40px; border-radius: 8px;">' : 
-          stageIcons[stageIndex]) + 
+        imageDisplay +
         '</div>' +
         '<div style="font-weight: bold; font-size: 10px; margin: 4px 0;">No.' + String(i).padStart(2, '0') + '</div>' +
         '<div style="font-weight: bold; font-size: 12px; margin: 2px 0; color: #ffeb3b;">' + data.name + '</div>' +
@@ -258,6 +274,7 @@ function showPokedex() {
         '<div style="font-size: 9px; margin-top: 4px; color: #4fc3f7;">消去数: ' + entry.count + '</div>' +
         '<div style="font-size: 8px; margin-top: 2px; opacity: 0.6;">クリックで詳細</div>';
     } else {
+      // 未発見の場合
       entryDiv.innerHTML = 
         '<div style="font-size: 32px; margin-bottom: 8px; height: 40px; display: flex; align-items: center; justify-content: center;">❓</div>' +
         '<div style="font-weight: bold; font-size: 10px; margin: 4px 0;">No.' + String(i).padStart(2, '0') + '</div>' +
