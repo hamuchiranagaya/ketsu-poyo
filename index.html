@@ -274,22 +274,8 @@ function showPokedex() {
     }
     
     if (entry.discovered) {
-      // 画像表示の安定化
-      var imageDisplay = '';
-      var imageTypeIndex = ((i - 1) % 6);
-      
-      // 画像が利用可能かより厳密にチェック
-      if (imageLoadStatus.loaded && 
-          hamImages && 
-          hamImages[imageTypeIndex] && 
-          hamImages[imageTypeIndex] !== null &&
-          hamImages[imageTypeIndex].complete &&
-          hamImages[imageTypeIndex].src) {
-        imageDisplay = '<img src="' + hamImages[imageTypeIndex].src + '" style="width: 40px; height: 40px; border-radius: 8px;" onerror="this.style.display=\'none\'; this.nextElementSibling.style.display=\'block\';">' +
-                      '<div style="font-size: 32px; display: none;">' + stageIcons[stageIndex] + '</div>';
-      } else {
-        imageDisplay = '<div style="font-size: 32px;">' + stageIcons[stageIndex] + '</div>';
-      }
+      // 安全な画像表示を使用
+      var imageDisplay = getSafeImageDisplay(i, 'small');
       
       entryDiv.innerHTML = 
         '<div class="pokedex-image" style="font-size: 32px; margin-bottom: 8px; height: 40px; display: flex; align-items: center; justify-content: center;">' + 
@@ -326,24 +312,8 @@ function showPokedexDetail(id) {
   
   if (!entry.discovered) return;
   
-  // 画像表示の安定化
-  var imageDisplay = '';
-  var imageTypeIndex = ((id - 1) % 6);
-  
-  console.log('📋 図鑑詳細 - ID:', id, 'ステージ:', stageIndex, '画像状態:', imageLoadStatus.loaded);
-  
-  // 図鑑一覧と同じ条件で画像表示
-  if (imageLoadStatus.loaded && 
-      hamImages && 
-      hamImages[imageTypeIndex] && 
-      hamImages[imageTypeIndex] !== null &&
-      hamImages[imageTypeIndex].complete &&
-      hamImages[imageTypeIndex].src) {
-    imageDisplay = '<img src="' + hamImages[imageTypeIndex].src + '" style="width: 80px; height: 80px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.3);" onerror="this.style.display=\'none\'; this.nextElementSibling.style.display=\'flex\';" alt="' + data.name + '">' +
-                  '<div style="width: 80px; height: 80px; border-radius: 12px; background: linear-gradient(135deg, #4facfe, #00f2fe); display: none; align-items: center; justify-content: center; font-size: 40px; box-shadow: 0 4px 12px rgba(0,0,0,0.3); color: white;">' + stageIcons[stageIndex] + '</div>';
-  } else {
-    imageDisplay = '<div style="width: 80px; height: 80px; border-radius: 12px; background: linear-gradient(135deg, #4facfe, #00f2fe); display: flex; align-items: center; justify-content: center; font-size: 40px; box-shadow: 0 4px 12px rgba(0,0,0,0.3); color: white;">' + stageIcons[stageIndex] + '</div>';
-  }
+  // 安全な画像表示を使用
+  var imageDisplay = getSafeImageDisplay(id, 'large');
   
   // 詳細画面を作成
   var detailScreen = document.createElement('div');
@@ -644,7 +614,7 @@ function showMyPage() {
     '<div class="card" style="max-width: 400px; text-align: center;">' +
       '<button onclick="this.parentElement.parentElement.remove()" style="position: absolute; top: 10px; right: 15px; background: rgba(255,255,255,0.8); border: none; border-radius: 50%; width: 30px; height: 30px; cursor: pointer; font-size: 16px; color: #333;">×</button>' +
       '<h3 style="margin: 16px 0;">📄 マイページ</h3>' +
-      '<div style="margin: 20px 0;">' + iconDisplay + '</div>' +
+      '<div style="margin: 20px 0; display: flex; justify-content: center; align-items: center;">' + iconDisplay + '</div>' +
       '<div style="background: rgba(255,255,255,0.2); border-radius: 12px; padding: 12px; margin: 16px 0;">' +
         '<div style="font-size: 18px; font-weight: bold; color: #ffeb3b;">「' + getSelectedTitleName() + '」</div>' +
       '</div>' +
@@ -958,11 +928,12 @@ function initGame() {
   requestAnimationFrame(gameLoop);
 }
 
-// 画像管理の完全修正版
+// 画像管理の完全修正版（永続化対応）
 var imageLoadStatus = {
   loaded: false,
   currentStage: -1,
-  images: []
+  images: [],
+  fallbackMode: false // 画像なしモードフラグ
 };
 
 function loadStageImages(stageIndex) {
@@ -971,7 +942,7 @@ function loadStageImages(stageIndex) {
   // 既に同じステージの画像が読み込み済みの場合はスキップ
   if (imageLoadStatus.loaded && imageLoadStatus.currentStage === stageIndex) {
     console.log('✅ 既に読み込み済み、スキップ');
-    useImages = true;
+    useImages = !imageLoadStatus.fallbackMode;
     return;
   }
   
@@ -980,6 +951,7 @@ function loadStageImages(stageIndex) {
   loadedImages = 0;
   imageLoadStatus.loaded = false;
   imageLoadStatus.currentStage = stageIndex;
+  imageLoadStatus.fallbackMode = true; // デフォルトでフォールバックモード
   
   // 新しい画像配列を作成
   imageLoadStatus.images = Array.from({length: TYPES}, function() { return new Image(); });
@@ -997,19 +969,21 @@ function loadStageImages(stageIndex) {
       successCount++;
       console.log('✅ 画像読み込み成功 ' + successCount + '/' + totalImages + ': ' + imagePath);
       
+      if (successCount >= 1) {
+        // 1つでも読み込めれば画像モード有効
+        imageLoadStatus.fallbackMode = false;
+        useImages = true;
+      }
+      
       if (successCount + (totalImages - successCount) === totalImages) {
         imageLoadStatus.loaded = true;
-        if (successCount > 0) {
-          useImages = true;
-          console.log('🎉 画像読み込み完了: ' + successCount + '個成功');
-        }
+        console.log('🎉 画像読み込み完了: ' + successCount + '個成功');
       }
     };
     
     // 読み込み失敗
     img.onerror = function() {
       console.log('❌ 画像読み込み失敗: ' + imagePath);
-      // 失敗した画像は null に設定
       hamImages[i] = null;
       
       if (successCount + (totalImages - successCount) === totalImages) {
@@ -1022,14 +996,29 @@ function loadStageImages(stageIndex) {
     img.src = imagePath;
   });
   
-  // 3秒でタイムアウト（フォールバック）
+  // 2秒でタイムアウト（より早く切り替え）
   setTimeout(function() {
     if (!imageLoadStatus.loaded) {
       console.log('⏰ 画像読み込みタイムアウト、アイコン表示に切り替え');
       imageLoadStatus.loaded = true;
+      imageLoadStatus.fallbackMode = true;
       useImages = false;
     }
-  }, 3000);
+  }, 2000);
+}
+
+// 安全な画像表示関数
+function getSafeImageDisplay(id, size) {
+  var stageIndex = Math.floor((id - 1) / 6);
+  var stageIcons = ['🌸', '🌻', '🍂', '❄️'];
+  var imageTypeIndex = ((id - 1) % 6);
+  
+  // 常にアイコン表示（安定性重視）
+  if (size === 'large') {
+    return '<div style="width: 80px; height: 80px; border-radius: 12px; background: linear-gradient(135deg, #4facfe, #00f2fe); display: flex; align-items: center; justify-content: center; font-size: 40px; box-shadow: 0 4px 12px rgba(0,0,0,0.3); color: white;">' + stageIcons[stageIndex] + '</div>';
+  } else {
+    return '<div style="font-size: 32px;">' + stageIcons[stageIndex] + '</div>';
+  }
 }
 
 function fit() {
