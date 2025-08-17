@@ -1,4 +1,13 @@
 {
+  "name": "はむケツぽよぽよ",
+  "short_name": "はむケツ",
+  "description": "かわいいはむケツのパズルゲーム",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#4facfe",
+  "theme_color": "#4facfe",
+  "orientation": "portrait",
+  "scope": "./",
   "icons": [
     {
       "src": "ketsupoyo.png",
@@ -12,5 +21,10 @@
       "type": "image/png",
       "purpose": "any maskable"
     }
-  ]
+  ],
+  "categories": [
+    "games",
+    "entertainment"
+  ],
+  "lang": "ja"
 }
