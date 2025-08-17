@@ -1,4 +1,4 @@
-const CACHE_NAME = 'hamketsu-poyo-v1';
+const CACHE_NAME = 'hamuketsu-cache-v1';
 const urlsToCache = [
   './',
   './index.html',
@@ -9,57 +9,57 @@ const urlsToCache = [
   './assets/ham_03.png',
   './assets/ham_04.png',
   './assets/ham_05.png',
-  './assets/ham_06.png'
+  './assets/ham_06.png',
+  './assets/ham_07.png',
+  './assets/ham_08.png',
+  './assets/ham_09.png',
+  './assets/ham_10.png',
+  './assets/ham_11.png',
+  './assets/ham_12.png',
+  './assets/ham_13.png',
+  './assets/ham_14.png',
+  './assets/ham_15.png',
+  './assets/ham_16.png',
+  './assets/ham_17.png',
+  './assets/ham_18.png',
+  './assets/ham_19.png',
+  './assets/ham_20.png',
+  './assets/ham_21.png',
+  './assets/ham_22.png',
+  './assets/ham_23.png',
+  './assets/ham_24.png',
 ];
 
-// サービスワーカーのインストール
+// Install: pre-cache all required assets
 self.addEventListener('install', (event) => {
-  console.log('サービスワーカーをインストールしています...');
+  self.skipWaiting();
   event.waitUntil(
-    caches.open(CACHE_NAME)
-      .then((cache) => {
-        console.log('ファイルをキャッシュしています');
-        return cache.addAll(urlsToCache);
-      })
-      .catch((error) => {
-        console.log('キャッシュエラー:', error);
-      })
+    caches.open(CACHE_NAME).then((cache) => cache.addAll(urlsToCache))
   );
 });
 
-// サービスワーカーのアクティベーション
+// Activate: clean up old caches
 self.addEventListener('activate', (event) => {
-  console.log('サービスワーカーがアクティベートされました');
   event.waitUntil(
-    caches.keys().then((cacheNames) => {
-      return Promise.all(
-        cacheNames.map((cacheName) => {
-          if (cacheName !== CACHE_NAME) {
-            console.log('古いキャッシュを削除:', cacheName);
-            return caches.delete(cacheName);
-          }
-        })
-      );
-    })
+    caches.keys().then((names) =>
+      Promise.all(names.filter((n) => n !== CACHE_NAME).map((n) => caches.delete(n)))
+    ).then(() => self.clients.claim())
   );
 });
 
-// ネットワークリクエストの処理
+// Fetch: cache-first strategy
 self.addEventListener('fetch', (event) => {
   event.respondWith(
-    caches.match(event.request)
-      .then((response) => {
-        // キャッシュにあれば返す、なければネットワークから取得
-        if (response) {
-          return response;
+    caches.match(event.request).then((cached) => {
+      if (cached) return cached;
+      return fetch(event.request).then((response) => {
+        // Optionally cache new GET responses
+        if (event.request.method === 'GET' && response && response.status === 200 && response.type === 'basic') {
+          const respClone = response.clone();
+          caches.open(CACHE_NAME).then((cache) => cache.put(event.request, respClone));
         }
-        return fetch(event.request);
-      })
-      .catch(() => {
-        // オフライン時のフォールバック
-        if (event.request.destination === 'document') {
-          return caches.match('./index.html');
-        }
-      })
+        return response;
+      }).catch(() => cached); // fallback to cache if network fails
+    })
   );
 });
