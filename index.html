@@ -53,17 +53,20 @@ var STAGES = [
   { name: '冬のケツ', icon: '❄️', range: [19, 24], season: 'winter' }
 ];
 
-// 画像管理システム（完全修正版）
+// 画像管理システム（デバッグ強化版）
 var IMAGE_MANAGER = {
   images: {},
   stageImages: {},
   currentStage: -1,
   loadedStages: new Set(),
   globalImageStatus: false,
+  loadAttempts: {},
   
   // 画像の確実な読み込み
   loadStageImages: function(stageIndex) {
     console.log('🖼️ IMAGE_MANAGER: ステージ ' + stageIndex + ' の画像読み込み開始');
+    console.log('🖼️ STAGES配列:', STAGES);
+    console.log('🖼️ 選択されたステージ:', STAGES[stageIndex]);
     
     var stage = STAGES[stageIndex];
     var stageKey = 'stage_' + stageIndex;
@@ -78,26 +81,36 @@ var IMAGE_MANAGER = {
     
     this.currentStage = stageIndex;
     this.stageImages[stageKey] = [];
+    this.loadAttempts[stageKey] = 0;
     
     var successCount = 0;
     var totalImages = TYPES;
+    
+    console.log('🖼️ 読み込み予定画像:', stage.range);
     
     // 各画像を読み込み
     for (var i = 0; i < TYPES; i++) {
       var imageNumber = stage.range[0] + i;
       var imagePath = 'assets/ham_' + String(imageNumber).padStart(2, '0') + '.png';
+      console.log('🖼️ 画像パス生成:', imagePath, '(番号:', imageNumber, ')');
+      
       var img = new Image();
       
       // クロージャーで正しいインデックスを保持
-      (function(imgIndex, imageSrc, imageObj) {
+      (function(imgIndex, imageSrc, imageObj, imageNum) {
+        console.log('🖼️ 画像読み込み開始:', imageSrc);
+        
         imageObj.onload = function() {
           successCount++;
           console.log('✅ IMAGE_MANAGER: 画像読み込み成功 ' + successCount + '/' + totalImages + ': ' + imageSrc);
+          console.log('✅ 画像サイズ:', this.naturalWidth + 'x' + this.naturalHeight);
           
           IMAGE_MANAGER.stageImages[stageKey][imgIndex] = imageObj;
           
+          // 1つでも成功したら画像モードを有効化
           if (successCount >= 1) {
             IMAGE_MANAGER.globalImageStatus = true;
+            console.log('🎉 画像モード有効化！');
           }
           
           if (successCount === totalImages) {
@@ -110,51 +123,95 @@ var IMAGE_MANAGER = {
         
         imageObj.onerror = function() {
           console.log('❌ IMAGE_MANAGER: 画像読み込み失敗: ' + imageSrc);
+          console.log('❌ エラー詳細:', this.src, 'complete:', this.complete, 'naturalWidth:', this.naturalWidth);
           IMAGE_MANAGER.stageImages[stageKey][imgIndex] = null;
           IMAGE_MANAGER.updateGlobalStatus();
         };
         
+        // 画像読み込み開始
         imageObj.src = imageSrc;
-      })(i, imagePath, img);
+        console.log('🖼️ 画像src設定完了:', imageSrc);
+        
+      })(i, imagePath, img, imageNumber);
     }
     
-    // タイムアウト処理
+    // タイムアウト処理（短縮）
     setTimeout(function() {
+      console.log('⏰ IMAGE_MANAGER: タイムアウトチェック - 成功数:', successCount);
       if (successCount === 0) {
-        console.log('⏰ IMAGE_MANAGER: タイムアウト - アイコン表示に切り替え');
+        console.log('⏰ IMAGE_MANAGER: 全読み込み失敗 - アイコン表示に切り替え');
         IMAGE_MANAGER.globalImageStatus = false;
       }
       IMAGE_MANAGER.updateGlobalStatus();
-    }, 3000);
+    }, 2000); // 2秒に短縮
   },
   
-  // グローバル状態更新
+  // グローバル状態更新（デバッグ追加）
   updateGlobalStatus: function() {
+    var previousStatus = useImages;
     useImages = this.globalImageStatus;
     hamImages = this.getCurrentStageImages();
-    console.log('🔄 IMAGE_MANAGER: グローバル状態更新 - useImages:', useImages);
+    
+    console.log('🔄 IMAGE_MANAGER: グローバル状態更新');
+    console.log('🔄 useImages:', previousStatus, '→', useImages);
+    console.log('🔄 hamImages配列:', hamImages);
+    console.log('🔄 現在のステージ:', this.currentStage);
+    
+    // 画像の詳細状況を確認
+    if (hamImages && hamImages.length > 0) {
+      for (var i = 0; i < hamImages.length; i++) {
+        var img = hamImages[i];
+        console.log('🔍 画像' + i + ':', img ? 'OK(' + img.src + ')' : 'NULL');
+      }
+    }
   },
   
   // 現在のステージの画像を取得
   getCurrentStageImages: function() {
     var stageKey = 'stage_' + this.currentStage;
-    return this.stageImages[stageKey] || [];
+    var images = this.stageImages[stageKey] || [];
+    console.log('📥 getCurrentStageImages:', stageKey, images);
+    return images;
   },
   
-  // 安全な画像取得
+  // 安全な画像取得（デバッグ強化）
   getSafeImage: function(typeIndex) {
     var currentImages = this.getCurrentStageImages();
+    console.log('🔍 getSafeImage: typeIndex=' + typeIndex + ', currentImages=', currentImages);
+    
+    if (!currentImages || currentImages.length <= typeIndex) {
+      console.log('❌ getSafeImage: 配列外または空');
+      return null;
+    }
+    
     var img = currentImages[typeIndex];
+    console.log('🔍 getSafeImage: img=', img);
     
     if (img && img.complete && img.naturalWidth > 0) {
+      console.log('✅ getSafeImage: 有効な画像', img.src);
       return img;
     }
+    
+    console.log('❌ getSafeImage: 無効な画像またはnull');
     return null;
   },
   
   // 画像が利用可能かチェック
   isImageAvailable: function(typeIndex) {
-    return this.getSafeImage(typeIndex) !== null;
+    var result = this.getSafeImage(typeIndex) !== null;
+    console.log('🔍 isImageAvailable(' + typeIndex + '):', result);
+    return result;
+  },
+  
+  // デバッグ情報表示
+  getDebugInfo: function() {
+    return {
+      currentStage: this.currentStage,
+      globalImageStatus: this.globalImageStatus,
+      loadedStages: Array.from(this.loadedStages),
+      stageImages: this.stageImages,
+      useImages: useImages
+    };
   }
 };
 
@@ -1094,33 +1151,44 @@ function initGame() {
   requestAnimationFrame(gameLoop);
 }
 
-// 安全な画像表示関数（強化版）
+// 安全な画像表示関数（デバッグ強化版）
 function getSafeImageDisplay(id, size) {
+  console.log('🎨 getSafeImageDisplay 呼び出し: id=' + id + ', size=' + size);
+  
   var stageIndex = Math.floor((id - 1) / 6);
   var stageIcons = ['🌸', '🌻', '🍂', '❄️'];
   var imageTypeIndex = ((id - 1) % 6);
+  
+  console.log('🎨 計算結果: stageIndex=' + stageIndex + ', imageTypeIndex=' + imageTypeIndex);
+  console.log('🎨 IMAGE_MANAGER状態:', IMAGE_MANAGER.getDebugInfo());
   
   // まず画像が利用可能かチェック
   if (IMAGE_MANAGER.isImageAvailable(imageTypeIndex)) {
     var img = IMAGE_MANAGER.getSafeImage(imageTypeIndex);
     if (img) {
+      console.log('✅ getSafeImageDisplay: 画像が利用可能', img.src);
       try {
         if (size === 'large') {
-          return '<img src="' + img.src + '" style="width: 80px; height: 80px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.3);">';
+          return '<img src="' + img.src + '" style="width: 80px; height: 80px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.3);" onload="console.log(\'✅ 画像表示成功(large): ' + img.src + '\')" onerror="console.log(\'❌ 画像表示失敗(large): ' + img.src + '\')">';
         } else if (size === 'profile') {
-          return '<img src="' + img.src + '" style="width: 80px; height: 80px; border-radius: 50%; box-shadow: 0 4px 12px rgba(0,0,0,0.3);">';
+          return '<img src="' + img.src + '" style="width: 80px; height: 80px; border-radius: 50%; box-shadow: 0 4px 12px rgba(0,0,0,0.3);" onload="console.log(\'✅ 画像表示成功(profile): ' + img.src + '\')" onerror="console.log(\'❌ 画像表示失敗(profile): ' + img.src + '\')">';
         } else if (size === 'icon') {
-          return '<div style="width: 60px; height: 60px; border-radius: 50%; overflow: hidden; margin: 0 auto 4px auto;"><img src="' + img.src + '" style="width: 100%; height: 100%; object-fit: cover;"></div>';
+          return '<div style="width: 60px; height: 60px; border-radius: 50%; overflow: hidden; margin: 0 auto 4px auto;"><img src="' + img.src + '" style="width: 100%; height: 100%; object-fit: cover;" onload="console.log(\'✅ 画像表示成功(icon): ' + img.src + '\')" onerror="console.log(\'❌ 画像表示失敗(icon): ' + img.src + '\')"></div>';
         } else {
-          return '<img src="' + img.src + '" style="width: 32px; height: 32px; border-radius: 4px;">';
+          return '<img src="' + img.src + '" style="width: 32px; height: 32px; border-radius: 4px;" onload="console.log(\'✅ 画像表示成功(small): ' + img.src + '\')" onerror="console.log(\'❌ 画像表示失敗(small): ' + img.src + '\')">';
         }
       } catch (error) {
-        console.log('画像表示エラー、アイコンにフォールバック:', error);
+        console.log('❌ getSafeImageDisplay: 画像HTML生成エラー:', error);
       }
+    } else {
+      console.log('❌ getSafeImageDisplay: getSafeImageがnullを返した');
     }
+  } else {
+    console.log('❌ getSafeImageDisplay: isImageAvailableがfalseを返した');
   }
   
   // フォールバック: アイコン表示
+  console.log('🔄 getSafeImageDisplay: アイコンにフォールバック');
   if (size === 'large') {
     return '<div style="width: 80px; height: 80px; border-radius: 12px; background: linear-gradient(135deg, #4facfe, #00f2fe); display: flex; align-items: center; justify-content: center; font-size: 40px; box-shadow: 0 4px 12px rgba(0,0,0,0.3); color: white;">' + stageIcons[stageIndex] + '</div>';
   } else if (size === 'profile') {
@@ -2442,10 +2510,41 @@ window.addEventListener('load', function() {
       localStorage.removeItem('hamketsu_scores');
       console.log('スコアクリア完了');
     },
-    imageManager: IMAGE_MANAGER
+    imageManager: IMAGE_MANAGER,
+    testImages: function() {
+      console.log('🧪 画像テスト開始');
+      console.log('🧪 IMAGE_MANAGER状態:', IMAGE_MANAGER.getDebugInfo());
+      console.log('🧪 useImages:', useImages);
+      console.log('🧪 hamImages:', hamImages);
+      
+      // 画像パスの存在テスト
+      for (var i = 1; i <= 6; i++) {
+        var imagePath = 'assets/ham_' + String(i).padStart(2, '0') + '.png';
+        var testImg = new Image();
+        testImg.onload = function() {
+          console.log('✅ 画像存在確認: ' + this.src);
+        };
+        testImg.onerror = function() {
+          console.log('❌ 画像存在しない: ' + this.src);
+        };
+        testImg.src = imagePath;
+      }
+    },
+    forceReloadImages: function() {
+      console.log('🔄 画像強制再読み込み');
+      IMAGE_MANAGER.loadedStages.clear();
+      IMAGE_MANAGER.stageImages = {};
+      IMAGE_MANAGER.globalImageStatus = false;
+      IMAGE_MANAGER.loadStageImages(currentStage);
+    }
   };
   
+  // 自動画像テスト実行
+  window.debugGame.testImages();
+  
   console.log('🎮 デバッグ機能: window.debugGame で利用可能');
+  console.log('🎮 画像テスト: window.debugGame.testImages()');
+  console.log('🎮 強制再読み込み: window.debugGame.forceReloadImages()');
 });
 
 console.log('全関数定義完了');
