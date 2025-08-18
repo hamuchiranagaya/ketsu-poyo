@@ -59,26 +59,43 @@ var useImages = false;
 var loadedImages = 0;
 
 // 称号システム
+// 新しい称号データ（CSV完全版）
 var TITLE_DATA = {
   1: { title: "はむケツビギナー", condition_type: "default", condition_value: 0, description: "ゲームを始めた証", secret: false },
-  2: { title: "スコア達人", condition_type: "score_over", condition_value: 5000, description: "5000点を超える", secret: false },
-  3: { title: "スコアマスター", condition_type: "score_over", condition_value: 10000, description: "10000点を超える", secret: false },
-  4: { title: "スコアキング", condition_type: "score_over", condition_value: 15000, description: "15000点を超える", secret: false },
-  5: { title: "スコアレジェンド", condition_type: "score_over", condition_value: 20000, description: "20000点を超える", secret: false },
-  6: { title: "チェインマスター", condition_type: "chain", condition_value: 5, description: "5チェインを達成", secret: false },
-  7: { title: "図鑑コレクター", condition_type: "pokedex", condition_value: 5, description: "5体のはむケツを発見", secret: false },
-  8: { title: "図鑑マスター", condition_type: "pokedex_complete", condition_value: 24, description: "全24体のはむケツを発見", secret: false },
-  9: { title: "ゲーマー", condition_type: "games_played", condition_value: 10, description: "10回ゲームをプレイ", secret: false },
-  10: { title: "はむケツハンター", condition_type: "cleared_blocks", condition_value: 500, description: "500個のはむケツを消去", secret: false },
-  11: { title: "タイムマスター", condition_type: "time_mode_clear", condition_value: 1, description: "制限時間モードをクリア", secret: false },
-  // はむケツラバー称号（自動生成）
-  101: { title: "オレケツラバー", condition_type: "pokedex_unlock", condition_value: 1, description: "オレケツを発見した証", secret: false },
-  102: { title: "バインバインラバー", condition_type: "pokedex_unlock", condition_value: 2, description: "バインバインを発見した証", secret: false },
-  103: { title: "黄金比ケツラバー", condition_type: "pokedex_unlock", condition_value: 3, description: "黄金比ケツを発見した証", secret: false },
-  104: { title: "ふらケツラバー", condition_type: "pokedex_unlock", condition_value: 4, description: "ふらケツを発見した証", secret: false },
-  105: { title: "デリシャスケツラバー", condition_type: "pokedex_unlock", condition_value: 5, description: "デリシャスケツを発見した証", secret: false },
-  106: { title: "やばケツラバー", condition_type: "pokedex_unlock", condition_value: 6, description: "やばケツを発見した証", secret: false },
-  107: { title: "ぱんケツラバー", condition_type: "pokedex_unlock", condition_value: 7, description: "ぱんケツを発見した証", secret: false }
+  2: { title: "はむケツデビュー", condition_type: "score_over", condition_value: 1000, description: "スコア1000点を達成せよ", secret: true },
+  3: { title: "はむケツ職人", condition_type: "score_over", condition_value: 5000, description: "スコア5000点を達成せよ", secret: true },
+  4: { title: "はむケツの匠", condition_type: "score_over", condition_value: 10000, description: "スコア10000点を達成せよ", secret: true },
+  5: { title: "はむケツレジェンド", condition_type: "score_over", condition_value: 15000, description: "スコア15000点を達成せよ", secret: true },
+  6: { title: "はむケツを極めしもの", condition_type: "score_over", condition_value: 20000, description: "スコア20000点を達成せよ", secret: true },
+  7: { title: "はむケツ流星群", condition_type: "chain", condition_value: 1, description: "1連鎖を達成せよ", secret: true },
+  8: { title: "はむケツ隕石落とし", condition_type: "chain", condition_value: 3, description: "3連鎖を達成せよ", secret: true },
+  9: { title: "はむケツスターレイン", condition_type: "chain", condition_value: 5, description: "5連鎖を達成せよ", secret: true },
+  10: { title: "はむケツメテオ", condition_type: "chain", condition_value: 7, description: "7連鎖を達成せよ", secret: true },
+  11: { title: "はむケツギャラクシー", condition_type: "chain", condition_value: 10, description: "10連鎖を達成せよ", secret: true },
+  12: { title: "はむケツコスモ", condition_type: "chain", condition_value: 15, description: "15連鎖を達成せよ", secret: true },
+  13: { title: "はむケツユニバース", condition_type: "chain", condition_value: 20, description: "20連鎖を達成せよ", secret: true },
+  14: { title: "はむケツライト勢", condition_type: "pokedex", condition_value: 5, description: "5体のはむケツを発見", secret: true },
+  15: { title: "はむケツオタク", condition_type: "pokedex", condition_value: 10, description: "10体のはむケツを発見", secret: true },
+  16: { title: "はむケツニスト", condition_type: "pokedex", condition_value: 15, description: "15体のはむケツを発見", secret: true },
+  17: { title: "はむケツマイスター", condition_type: "pokedex", condition_value: 20, description: "20体のはむケツを発見", secret: true },
+  18: { title: "はむケツコレクター", condition_type: "pokedex_complete", condition_value: 24, description: "はむケツ図鑑コンプリート", secret: true },
+  19: { title: "はむケツ見習い", condition_type: "games_played", condition_value: 5, description: "ゲームを5回プレイ", secret: true },
+  20: { title: "はむケツアマチュア", condition_type: "games_played", condition_value: 10, description: "ゲームを10回プレイ", secret: true },
+  21: { title: "はむケツマニア", condition_type: "games_played", condition_value: 30, description: "ゲームを30回プレイ", secret: true },
+  22: { title: "はむケツの申し子", condition_type: "games_played", condition_value: 60, description: "ゲームを60回プレイ", secret: true },
+  23: { title: "はむケツ中毒", condition_type: "games_played", condition_value: 100, description: "ゲームを100回プレイ", secret: true },
+  24: { title: "はむケツ廃人", condition_type: "games_played", condition_value: 300, description: "ゲームを300回プレイ", secret: true },
+  25: { title: "はむケツ界の住人", condition_type: "games_played", condition_value: 500, description: "ゲームを500回プレイ", secret: true },
+  26: { title: "はむケツブレイカー", condition_type: "cleared_blocks", condition_value: 200, description: "200ケツ消去を達成せよ", secret: true },
+  27: { title: "はむケツハンター", condition_type: "cleared_blocks", condition_value: 500, description: "500ケツ消去を達成せよ", secret: true },
+  28: { title: "はむケツデストロイヤー", condition_type: "cleared_blocks", condition_value: 1000, description: "1000ケツ消去を達成せよ", secret: true },
+  29: { title: "はむケツ無双", condition_type: "cleared_blocks", condition_value: 2000, description: "2000ケツ消去を達成せよ", secret: true },
+  30: { title: "はむケツクラッシャー", condition_type: "cleared_blocks", condition_value: 3000, description: "3000ケツ消去を達成せよ", secret: true },
+  31: { title: "はむケツビックバン", condition_type: "cleared_blocks", condition_value: 5000, description: "5000ケツ消去を達成せよ", secret: true },
+  32: { title: "はむケツ修行中", condition_type: "time_mode_play", condition_value: 1, description: "制限時間モードで1回プレイ", secret: true },
+  33: { title: "時を駆けるはむケツ", condition_type: "time_mode_play", condition_value: 5, description: "制限時間モードで5回プレイ", secret: true },
+  34: { title: "はむケツの化身", condition_type: "time_mode_play", condition_value: 10, description: "制限時間モードで10回プレイ", secret: true },
+  35: { title: "はむケツフラッシュ", condition_type: "time_mode_clear", condition_value: 1, description: "制限時間モードを1回クリア", secret: true }
 };
 
 var userStats = {
@@ -87,20 +104,44 @@ var userStats = {
   gamesPlayed: 0,
   totalCleared: 0,
   timeModeClears: 0,
+  timeModePlayCount: 0, // 新追加：制限時間モードプレイ回数
   selectedTitle: 1, // 選択中の称号ID
   selectedIcon: 0   // 選択中のアイコン（0は初期状態）
 };
 
-// CSV読み込み関数（称号用）
+// CSV読み込み関数（称号用）- 強化版
 function loadTitleDataFromCSV(csvData) {
   try {
+    console.log('📋 称号CSVデータ読み込み開始');
     var lines = csvData.split('\n');
     var headers = lines[0].split(',').map(function(h) { return h.trim(); });
+    
+    console.log('📋 CSVヘッダー:', headers);
+    
+    // 既存のTITLE_DATAをクリア（CSVのデータで上書き）
+    TITLE_DATA = {};
     
     for (var i = 1; i < lines.length; i++) {
       if (lines[i].trim() === '') continue;
       
-      var values = lines[i].split(',').map(function(v) { return v.trim(); });
+      // カンマ区切りを正確に解析
+      var values = [];
+      var currentValue = '';
+      var inQuotes = false;
+      
+      for (var j = 0; j < lines[i].length; j++) {
+        var char = lines[i][j];
+        if (char === '"') {
+          inQuotes = !inQuotes;
+        } else if (char === ',' && !inQuotes) {
+          values.push(currentValue.trim());
+          currentValue = '';
+        } else {
+          currentValue += char;
+        }
+      }
+      values.push(currentValue.trim()); // 最後の値
+      
       var id = parseInt(values[0]);
       
       if (id && id >= 1) {
@@ -109,14 +150,36 @@ function loadTitleDataFromCSV(csvData) {
           condition_type: values[2] || 'default',
           condition_value: parseInt(values[3]) || 0,
           description: values[4] || '???を達成せよ',
-          secret: values[5] === 'true'
+          secret: values[5] === 'true' || values[5] === 'TRUE'
         };
+        
+        console.log('📋 称号追加:', id, TITLE_DATA[id]);
       }
     }
-    console.log('称号データ更新完了');
+    
+    console.log('📋 称号データ更新完了 - 総数:', Object.keys(TITLE_DATA).length);
   } catch (error) {
-    console.log('称号CSV読み込みエラー:', error);
+    console.log('❌ 称号CSV読み込みエラー:', error);
   }
+}
+
+// CSVデータを直接実装（ファイル内容を直接コピペできるように）
+function initializeTitlesFromCSV() {
+  console.log('🏆 称号システム初期化');
+  
+  // ここにCSVの内容をコピペして実装
+  // 例: loadTitleDataFromCSV('ここにCSVの内容');
+  
+  // CSVが提供されたら、以下のようにデータを設定
+  var csvContent = `id,title,condition_type,condition_value,description,secret
+1,はむケツビギナー,default,0,ゲームを始めた証,false
+2,スコア達人,score_over,5000,5000点を超える,false
+3,スコアマスター,score_over,10000,10000点を超える,false
+4,スコアキング,score_over,15000,15000点を超える,false
+5,スコアレジェンド,score_over,20000,20000点を超える,false`;
+
+  // 実際のCSVデータが提供されたらこちらを使用
+  // loadTitleDataFromCSV(csvContent);
 }
 
 // 図鑑データ（CSV形式対応）
@@ -465,8 +528,12 @@ function updateStats(newScore, newChain, blocksCleared, isTimeMode) {
   userStats.gamesPlayed++;
   userStats.totalCleared += blocksCleared || 0;
   
-  if (isTimeMode && !gameOver) {
-    userStats.timeModeClears++;
+  // 制限時間モード統計更新
+  if (isTimeMode) {
+    userStats.timeModePlayCount++; // プレイ回数を増加
+    if (!gameOver) {
+      userStats.timeModeClears++; // クリア時のみ増加
+    }
   }
   
   console.log('更新後の統計:', userStats);
@@ -511,6 +578,9 @@ function checkAndUnlockTitles() {
         break;
       case 'time_mode_clear':
         unlocked = userStats.timeModeClears >= titleData.condition_value;
+        break;
+      case 'time_mode_play':
+        unlocked = userStats.timeModePlayCount >= titleData.condition_value;
         break;
       case 'pokedex_unlock':
         // 特定のはむケツが発見されているかチェック
