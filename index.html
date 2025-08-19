@@ -164,7 +164,7 @@
     </button>
     
     <a href="https://youtube.com/@hamuchira" target="_blank" class="youtube-link">
-      🎬 もっと！はむチラ長屋ch.
+      🎬 もっと！はむちら長屋ch.
     </a>
     
     <div class="share-buttons">
@@ -277,13 +277,21 @@ var STAGES = [
   { name: '冬のケツ', icon: '❄️', range: [19, 24], season: 'winter' }
 ];
 
-// 画像管理システム
+// 画像管理システム（修正版）
 var IMAGE_MANAGER = {
   images: {},
   stageImages: {},
   currentStage: -1,
   loadedStages: new Set(),
   globalImageStatus: false,
+  
+  // 全ステージの画像を一度に読み込む
+  loadAllStageImages: function() {
+    console.log('全ステージ画像読み込み開始');
+    for (var i = 0; i < STAGES.length; i++) {
+      this.loadStageImages(i);
+    }
+  },
   
   loadStageImages: function(stageIndex) {
     console.log('画像読み込み開始: ステージ', stageIndex);
@@ -293,48 +301,41 @@ var IMAGE_MANAGER = {
     if (this.loadedStages.has(stageIndex)) {
       this.currentStage = stageIndex;
       this.updateGlobalStatus();
-      return;
+      return Promise.resolve();
     }
     
     this.currentStage = stageIndex;
     this.stageImages[stageKey] = [];
     
-    var successCount = 0;
-    var totalImages = TYPES;
+    var promises = [];
     
     for (var i = 0; i < TYPES; i++) {
       var imageNumber = stage.range[0] + i;
       var imagePath = 'assets/ham_' + String(imageNumber).padStart(2, '0') + '.png';
-      var img = new Image();
       
-      (function(imgIndex, imageSrc, imageObj) {
-        imageObj.onload = function() {
-          successCount++;
-          IMAGE_MANAGER.stageImages[stageKey][imgIndex] = imageObj;
-          if (successCount >= 1) {
+      var promise = new Promise((function(imgIndex, imageSrc) {
+        return function(resolve, reject) {
+          var img = new Image();
+          img.onload = function() {
+            IMAGE_MANAGER.stageImages[stageKey][imgIndex] = img;
             IMAGE_MANAGER.globalImageStatus = true;
-          }
-          if (successCount === totalImages) {
-            IMAGE_MANAGER.loadedStages.add(stageIndex);
-          }
-          IMAGE_MANAGER.updateGlobalStatus();
+            resolve(img);
+          };
+          img.onerror = function() {
+            IMAGE_MANAGER.stageImages[stageKey][imgIndex] = null;
+            resolve(null);
+          };
+          img.src = imageSrc;
         };
-        
-        imageObj.onerror = function() {
-          IMAGE_MANAGER.stageImages[stageKey][imgIndex] = null;
-          IMAGE_MANAGER.updateGlobalStatus();
-        };
-        
-        imageObj.src = imageSrc;
-      })(i, imagePath, img);
+      })(i, imagePath));
+      
+      promises.push(promise);
     }
     
-    setTimeout(function() {
-      if (successCount === 0) {
-        IMAGE_MANAGER.globalImageStatus = false;
-      }
-      IMAGE_MANAGER.updateGlobalStatus();
-    }, 2000);
+    return Promise.all(promises).then(() => {
+      this.loadedStages.add(stageIndex);
+      this.updateGlobalStatus();
+    });
   },
   
   updateGlobalStatus: function() {
@@ -345,6 +346,21 @@ var IMAGE_MANAGER = {
   getCurrentStageImages: function() {
     var stageKey = 'stage_' + this.currentStage;
     return this.stageImages[stageKey] || [];
+  },
+  
+  // 指定されたIDの画像を取得（すべてのステージから）
+  getImageById: function(id) {
+    var stageIndex = Math.floor((id - 1) / 6);
+    var typeIndex = (id - 1) % 6;
+    var stageKey = 'stage_' + stageIndex;
+    
+    if (this.stageImages[stageKey] && this.stageImages[stageKey][typeIndex]) {
+      var img = this.stageImages[stageKey][typeIndex];
+      if (img && img.complete && img.naturalWidth > 0) {
+        return img;
+      }
+    }
+    return null;
   },
   
   getSafeImage: function(typeIndex) {
@@ -374,7 +390,7 @@ var TITLE_DATA = {
   3: { title: "はむケツ職人", condition_type: "score_over", condition_value: 5000, description: "スコア5000点を達成せよ", secret: false },
   4: { title: "はむケツの匠", condition_type: "score_over", condition_value: 10000, description: "スコア10000点を達成せよ", secret: false },
   5: { title: "はむケツレジェンド", condition_type: "score_over", condition_value: 15000, description: "スコア15000点を達成せよ", secret: false },
-  6: { title: "はむケツを極めしもの", condition_type: "score_over", condition_value: 20000, description: "スコア20000点を達成せよ", secret: false },
+  6: { title: "はむケツを極めし者", condition_type: "score_over", condition_value: 20000, description: "スコア20000点を達成せよ", secret: false },
   7: { title: "はむケツ流星群", condition_type: "chain", condition_value: 1, description: "1連鎖を達成せよ", secret: false },
   8: { title: "はむケツ隕石落とし", condition_type: "chain", condition_value: 3, description: "3連鎖を達成せよ", secret: false },
   9: { title: "はむケツスターレイン", condition_type: "chain", condition_value: 5, description: "5連鎖を達成せよ", secret: false },
@@ -399,12 +415,12 @@ var TITLE_DATA = {
   28: { title: "はむケツデストロイヤー", condition_type: "cleared_blocks", condition_value: 1000, description: "1000ケツ消去を達成せよ", secret: false },
   29: { title: "はむケツ無双", condition_type: "cleared_blocks", condition_value: 2000, description: "2000ケツ消去を達成せよ", secret: false },
   30: { title: "はむケツクラッシャー", condition_type: "cleared_blocks", condition_value: 3000, description: "3000ケツ消去を達成せよ", secret: false },
-  31: { title: "はむケツビックバン", condition_type: "cleared_blocks", condition_value: 5000, description: "5000ケツ消去を達成せよ", secret: false },
+  31: { title: "はむケツビッグバン", condition_type: "cleared_blocks", condition_value: 5000, description: "5000ケツ消去を達成せよ", secret: false },
   32: { title: "はむケツ修行中", condition_type: "time_mode_play", condition_value: 1, description: "制限時間モードで1回プレイ", secret: false },
   33: { title: "時を駆けるはむケツ", condition_type: "time_mode_play", condition_value: 5, description: "制限時間モードで5回プレイ", secret: false },
   34: { title: "はむケツの化身", condition_type: "time_mode_play", condition_value: 10, description: "制限時間モードで10回プレイ", secret: false },
   35: { title: "はむケツフラッシュ", condition_type: "fast_clear_60", condition_value: 60, description: "60秒以内でクリア", secret: false },
-  // ○○ラバー称号（各はむケツ発見時に取得）
+  // ◯◯ラバー称号（各はむケツ発見時に取得）
   101: { title: "オレケツラバー", condition_type: "pokedex_unlock", condition_value: 1, description: "オレケツを図鑑に登録した証", secret: false },
   102: { title: "パインパインラバー", condition_type: "pokedex_unlock", condition_value: 2, description: "パインパインを図鑑に登録した証", secret: false },
   103: { title: "黄金比ケツラバー", condition_type: "pokedex_unlock", condition_value: 3, description: "黄金比ケツを図鑑に登録した証", secret: false },
@@ -434,9 +450,9 @@ var TITLE_DATA = {
 var POKEDEX_DATA = {
   1: { name: "オレケツ", owner: "カフェオレ", youtubeUrl: "", description: "カフェオレの美味しそうなケツ" },
   2: { name: "パインパイン", owner: "かれれ", youtubeUrl: "", description: "パインパインと弾むケツ" },
-  3: { name: "黄金比ケツ", owner: "ごった", youtubeUrl: "", description: "完璧な黄金比で作られたケツ" },
+  3: { name: "黄金比ケツ", owner: "こった", youtubeUrl: "", description: "完璧な黄金比で作られたケツ" },
   4: { name: "ふらケツ", owner: "フラン", youtubeUrl: "", description: "ふらふらと魅力的なケツ" },
-  5: { name: "デリシャスケツ", owner: "すぷも～ね", youtubeUrl: "", description: "美味しそうなデリシャスケツ" },
+  5: { name: "デリシャスケツ", owner: "すぷも〜ね", youtubeUrl: "", description: "美味しそうなデリシャスケツ" },
   6: { name: "やばケツ", owner: "アマレッティ", youtubeUrl: "", description: "やばいくらい素晴らしいケツ" },
   7: { name: "ぱんケツ", owner: "ぱんな", youtubeUrl: "", description: "ふわふわパンのようなケツ" },
   8: { name: "夏の太陽ケツ", owner: "なつちゃん", youtubeUrl: "", description: "夏の太陽のように輝くケツ" },
@@ -508,9 +524,8 @@ function startGame() {
 function showPokedex() {
   console.log('図鑑を表示');
   
-  if (IMAGE_MANAGER.currentStage === -1) {
-    IMAGE_MANAGER.loadStageImages(currentStage);
-  }
+  // 全ステージの画像を確実に読み込む
+  IMAGE_MANAGER.loadAllStageImages();
   
   var existingPokedex = document.getElementById('pokedexScreen');
   if (existingPokedex && existingPokedex.style.display === 'flex') {
@@ -618,9 +633,8 @@ function closePokedex() {
 function showMyPage() {
   console.log('マイページを表示');
   
-  if (IMAGE_MANAGER.currentStage === -1) {
-    IMAGE_MANAGER.loadStageImages(currentStage);
-  }
+  // 全ステージの画像を確実に読み込む
+  IMAGE_MANAGER.loadAllStageImages();
   
   var myPageScreen = document.createElement('div');
   myPageScreen.className = 'overlay';
@@ -677,7 +691,7 @@ function showMyPage() {
 }
 
 function shareToX() {
-  var text = encodeURIComponent('はむケツぽよぽよで遊んでみてね！🍹✨\nはむケツを4個以上つなげて、ぷるぷる消すパズルゲーム\n\n#はむチラ #はむケツぽよぽよ');
+  var text = encodeURIComponent('はむケツぽよぽよで遊んでみてね！🹁✨\nはむケツを4個以上つなげて、ぷるぷる消すパズルゲーム\n\n#はむちら #はむケツぽよぽよ');
   var url = encodeURIComponent('https://hamuchiranagaya.github.io/ketsu-poyo/');
   window.open('https://twitter.com/intent/tweet?text=' + text + '&url=' + url, '_blank');
 }
@@ -730,7 +744,7 @@ function restart() {
 }
 
 function shareResult() {
-  var text = encodeURIComponent('はむケツぽよぽよでスコア ' + score + ' 点を記録！🍹✨\nはむケツを4個以上つなげて、ぷるぷる消すパズルゲーム\n\n#はむチラ #はむケツぽよぽよ');
+  var text = encodeURIComponent('はむケツぽよぽよでスコア ' + score + ' 点を記録！🹁✨\nはむケツを4個以上つなげて、ぷるぷる消すパズルゲーム\n\n#はむちら #はむケツぽよぽよ');
   var url = encodeURIComponent('https://hamuchiranagaya.github.io/ketsu-poyo/');
   window.open('https://twitter.com/intent/tweet?text=' + text + '&url=' + url, '_blank');
 }
@@ -824,20 +838,19 @@ function initGame() {
 function getSafeImageDisplay(id, size) {
   var stageIndex = Math.floor((id - 1) / 6);
   var stageIcons = ['🌸', '🌻', '🍂', '❄️'];
-  var imageTypeIndex = ((id - 1) % 6);
   
-  if (IMAGE_MANAGER.isImageAvailable(imageTypeIndex)) {
-    var img = IMAGE_MANAGER.getSafeImage(imageTypeIndex);
-    if (img) {
-      if (size === 'large') {
-        return '<img src="' + img.src + '" style="width: 80px; height: 80px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.3);">';
-      } else if (size === 'profile') {
-        return '<img src="' + img.src + '" style="width: 80px; height: 80px; border-radius: 50%; box-shadow: 0 4px 12px rgba(0,0,0,0.3);">';
-      } else if (size === 'icon') {
-        return '<div style="width: 60px; height: 60px; border-radius: 50%; overflow: hidden; margin: 0 auto 4px auto;"><img src="' + img.src + '" style="width: 100%; height: 100%; object-fit: cover;"></div>';
-      } else {
-        return '<img src="' + img.src + '" style="width: 32px; height: 32px; border-radius: 4px;">';
-      }
+  // 修正: 直接IDを使って画像を取得
+  var img = IMAGE_MANAGER.getImageById(id);
+  
+  if (img) {
+    if (size === 'large') {
+      return '<img src="' + img.src + '" style="width: 80px; height: 80px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.3);">';
+    } else if (size === 'profile') {
+      return '<img src="' + img.src + '" style="width: 80px; height: 80px; border-radius: 50%; box-shadow: 0 4px 12px rgba(0,0,0,0.3);">';
+    } else if (size === 'icon') {
+      return '<div style="width: 60px; height: 60px; border-radius: 50%; overflow: hidden; margin: 0 auto 4px auto;"><img src="' + img.src + '" style="width: 100%; height: 100%; object-fit: cover;"></div>';
+    } else {
+      return '<img src="' + img.src + '" style="width: 32px; height: 32px; border-radius: 4px;">';
     }
   }
   
@@ -1363,7 +1376,7 @@ function gameOverNow(reason) {
   
   setTimeout(function() {
     try {
-      showGameOverlay('🍹 Game Over 🍹', reason + ' スコア: ' + score);
+      showGameOverlay('🹁 Game Over 🹁', reason + ' スコア: ' + score);
     } catch (displayError) {
       alert('Game Over\n' + reason + '\nスコア: ' + score);
     }
@@ -1444,7 +1457,7 @@ function hideGameOverlay() {
   }
 }
 
-// 図鑑システム  
+// 図鑑システム   
 function loadPokedex() {
   try {
     if (typeof(Storage) !== "undefined" && localStorage) {
@@ -1484,7 +1497,7 @@ function addToPokedex(type, count) {
     pokedex[key].discovered = true;
     showDiscoveryMessage(type);
     
-    // ○○ラバー称号を解放
+    // ◯◯ラバー称号を解放
     var laverTitleId = 100 + type; // 101-124
     if (TITLE_DATA[laverTitleId]) {
       setTimeout(function() {
@@ -1732,9 +1745,7 @@ function showIconSelect() {
   existingPages.forEach(function(page) { page.remove(); });
   
   // 画像システムの初期化を確実に行う
-  if (IMAGE_MANAGER.currentStage === -1) {
-    IMAGE_MANAGER.loadStageImages(currentStage);
-  }
+  IMAGE_MANAGER.loadAllStageImages();
   
   var iconSelectScreen = document.createElement('div');
   iconSelectScreen.className = 'overlay';
@@ -1810,7 +1821,7 @@ function shareMyPage(platform) {
       'ベストスコア: ' + bestScore + '点\n\n' +
       'はむケツを集めてぷるぷる消すゲーム 🎮\n' +
       'はむケツぽよぽよ、ぜひ遊んでみてね！\n' +
-      '#ハムスター #はむチラ #はむケツぽよぽよ';
+      '#ハムスター #はむちら #はむケツぽよぽよ';
     
     var gameUrl = 'https://hamuchiranagaya.github.io/ketsu-poyo/';
     
@@ -2023,6 +2034,9 @@ window.addEventListener('resize', fit);
 window.addEventListener('load', function() {
   console.log('ページ読み込み完了');
   
+  // 全ステージの画像を初期化時に読み込み開始
+  IMAGE_MANAGER.loadAllStageImages();
+  
   // ユーザー統計とポケデックス初期化
   loadUserStats();
   updatePokedexCount();
@@ -2038,6 +2052,21 @@ window.showMyPage = showMyPage;
 window.shareToX = shareToX;
 window.copyURL = copyURL;
 window.simpleInstall = simpleInstall;
+window.selectTitle = selectTitle;
+window.selectIcon = selectIcon;
+window.showTitleList = showTitleList;
+window.showIconSelect = showIconSelect;
+window.shareMyPage = shareMyPage;
+window.closePokedex = closePokedex;
+window.backToStart = backToStart;
+window.restart = restart;
+window.shareResult = shareResult;
+window.moveLeft = moveLeft;
+window.moveRight = moveRight;
+window.softDrop = softDrop;
+window.hardDrop = hardDrop;
+window.rotate = rotate;
+window.toggleTimeMode = toggleTimeMode;
 </script>
 </body>
 </html>
