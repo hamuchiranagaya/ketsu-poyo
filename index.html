@@ -636,6 +636,10 @@ function showMyPage() {
   // 全ステージの画像を確実に読み込む
   IMAGE_MANAGER.loadAllStageImages();
   
+  // 既存の動的オーバーレイのみを削除（固定の図鑑オーバーレイは残す）
+  var existingDynamicOverlays = document.querySelectorAll('.overlay:not(#pokedexScreen):not(#gameOverlay)');
+  existingDynamicOverlays.forEach(function(overlay) { overlay.remove(); });
+  
   var myPageScreen = document.createElement('div');
   myPageScreen.className = 'overlay';
   myPageScreen.style.display = 'flex';
@@ -1656,9 +1660,9 @@ function showBest() {
 }
 
 function showTitleList() {
-  // 現在のマイページを閉じる
-  var existingPages = document.querySelectorAll('.overlay');
-  existingPages.forEach(function(page) { page.remove(); });
+  // 既存の動的オーバーレイのみを削除（固定の図鑑オーバーレイは残す）
+  var existingDynamicOverlays = document.querySelectorAll('.overlay:not(#pokedexScreen):not(#gameOverlay)');
+  existingDynamicOverlays.forEach(function(overlay) { overlay.remove(); });
   
   var titleListScreen = document.createElement('div');
   titleListScreen.className = 'overlay';
@@ -1740,9 +1744,9 @@ function selectTitle(titleId) {
 }
 
 function showIconSelect() {
-  // 現在のマイページを閉じる
-  var existingPages = document.querySelectorAll('.overlay');
-  existingPages.forEach(function(page) { page.remove(); });
+  // 既存の動的オーバーレイのみを削除（固定の図鑑オーバーレイは残す）
+  var existingDynamicOverlays = document.querySelectorAll('.overlay:not(#pokedexScreen):not(#gameOverlay)');
+  existingDynamicOverlays.forEach(function(overlay) { overlay.remove(); });
   
   // 画像システムの初期化を確実に行う
   IMAGE_MANAGER.loadAllStageImages();
