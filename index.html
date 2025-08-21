@@ -164,7 +164,7 @@
     </button>
     
     <a href="https://youtube.com/@hamuchira" target="_blank" class="youtube-link">
-      🎬 もっと！はむちら長屋ch.
+      🎬 もっと！はむチラ長屋ch.
     </a>
     
     <div class="share-buttons">
@@ -239,6 +239,91 @@
 </div>
 
 <script>
+// ブラウザバック管理システム
+var BROWSER_BACK = {
+  currentScreen: 'start', // start, game, pokedex, mypage, titlelist, iconselect
+  initialized: false,
+  
+  init: function() {
+    if (this.initialized) return;
+    this.initialized = true;
+    
+    // 初期状態をpushState
+    history.replaceState({ screen: 'start' }, '', '');
+    
+    // popstateイベントリスナー
+    window.addEventListener('popstate', this.handlePopState.bind(this));
+  },
+  
+  pushState: function(screen) {
+    this.currentScreen = screen;
+    history.pushState({ screen: screen }, '', '');
+  },
+  
+  handlePopState: function(event) {
+    var targetScreen = event.state ? event.state.screen : 'start';
+    
+    // 現在の画面から適切な戻り先に移動
+    switch (this.currentScreen) {
+      case 'game':
+      case 'pokedex':
+      case 'mypage':
+        this.goToStart();
+        break;
+      case 'titlelist':
+      case 'iconselect':
+        this.goToMyPage();
+        break;
+      default:
+        this.goToStart();
+        break;
+    }
+  },
+  
+  goToStart: function() {
+    // ゲーム画面を閉じる
+    if (gameStarted) {
+      gameStarted = false;
+      var gameArea = document.getElementById('gameArea');
+      var startScreen = document.getElementById('startScreen');
+      if (gameArea) gameArea.classList.remove('active');
+      if (startScreen) startScreen.style.display = 'block';
+    }
+    
+    // オーバーレイを閉じる
+    this.closeAllOverlays();
+    
+    this.currentScreen = 'start';
+  },
+  
+  goToMyPage: function() {
+    // 動的オーバーレイを閉じる
+    this.closeDynamicOverlays();
+    
+    // マイページを表示
+    this.currentScreen = 'mypage';
+    showMyPage();
+  },
+  
+  closeAllOverlays: function() {
+    // 図鑑オーバーレイ
+    var pokedexScreen = document.getElementById('pokedexScreen');
+    if (pokedexScreen) pokedexScreen.style.display = 'none';
+    
+    // ゲームオーバーオーバーレイ
+    var gameOverlay = document.getElementById('gameOverlay');
+    if (gameOverlay) gameOverlay.style.display = 'none';
+    
+    // 動的オーバーレイ
+    this.closeDynamicOverlays();
+  },
+  
+  closeDynamicOverlays: function() {
+    var dynamicOverlays = document.querySelectorAll('.overlay:not(#pokedexScreen):not(#gameOverlay)');
+    dynamicOverlays.forEach(function(overlay) { overlay.remove(); });
+  }
+};
+
 // グローバル変数
 var currentStage = 0;
 var gameStarted = false;
@@ -420,7 +505,7 @@ var TITLE_DATA = {
   33: { title: "時を駆けるはむケツ", condition_type: "time_mode_play", condition_value: 5, description: "制限時間モードで5回プレイ", secret: false },
   34: { title: "はむケツの化身", condition_type: "time_mode_play", condition_value: 10, description: "制限時間モードで10回プレイ", secret: false },
   35: { title: "はむケツフラッシュ", condition_type: "fast_clear_60", condition_value: 60, description: "60秒以内でクリア", secret: false },
-  // ◯◯ラバー称号（各はむケツ発見時に取得）
+  // ○○ラバー称号（各はむケツ発見時に取得）
   101: { title: "オレケツラバー", condition_type: "pokedex_unlock", condition_value: 1, description: "オレケツを図鑑に登録した証", secret: false },
   102: { title: "パインパインラバー", condition_type: "pokedex_unlock", condition_value: 2, description: "パインパインを図鑑に登録した証", secret: false },
   103: { title: "黄金比ケツラバー", condition_type: "pokedex_unlock", condition_value: 3, description: "黄金比ケツを図鑑に登録した証", secret: false },
@@ -450,9 +535,9 @@ var TITLE_DATA = {
 var POKEDEX_DATA = {
   1: { name: "オレケツ", owner: "カフェオレ", youtubeUrl: "", description: "カフェオレの美味しそうなケツ" },
   2: { name: "パインパイン", owner: "かれれ", youtubeUrl: "", description: "パインパインと弾むケツ" },
-  3: { name: "黄金比ケツ", owner: "こった", youtubeUrl: "", description: "完璧な黄金比で作られたケツ" },
+  3: { name: "黄金比ケツ", owner: "ごった", youtubeUrl: "", description: "完璧な黄金比で作られたケツ" },
   4: { name: "ふらケツ", owner: "フラン", youtubeUrl: "", description: "ふらふらと魅力的なケツ" },
-  5: { name: "デリシャスケツ", owner: "すぷも〜ね", youtubeUrl: "", description: "美味しそうなデリシャスケツ" },
+  5: { name: "デリシャスケツ", owner: "すぷも～ね", youtubeUrl: "", description: "美味しそうなデリシャスケツ" },
   6: { name: "やばケツ", owner: "アマレッティ", youtubeUrl: "", description: "やばいくらい素晴らしいケツ" },
   7: { name: "ぱんケツ", owner: "ぱんな", youtubeUrl: "", description: "ふわふわパンのようなケツ" },
   8: { name: "夏の太陽ケツ", owner: "なつちゃん", youtubeUrl: "", description: "夏の太陽のように輝くケツ" },
@@ -486,7 +571,7 @@ var userStats = {
   fastClear60: false // 60秒以内クリア達成フラグ
 };
 
-// UI関数
+// UI関数（ブラウザバック機能追加）
 function selectStage(stageIndex) {
   console.log('ステージ選択:', stageIndex);
   var stageBtns = document.querySelectorAll('.stage-btn');
@@ -514,6 +599,9 @@ function startGame() {
       gameArea.classList.add('active');
     }
     
+    // ブラウザバック機能: ゲーム画面に移動
+    BROWSER_BACK.pushState('game');
+    
     initGame();
   } catch (error) {
     console.error('ゲーム開始エラー:', error);
@@ -540,6 +628,9 @@ function showPokedex() {
     console.error('図鑑要素が見つかりません');
     return;
   }
+  
+  // ブラウザバック機能: 図鑑画面に移動
+  BROWSER_BACK.pushState('pokedex');
   
   var pokedex = loadPokedex();
   pokedexGrid.innerHTML = '';
@@ -628,6 +719,9 @@ function closePokedex() {
   if (pokedexScreen) {
     pokedexScreen.style.display = 'none';
   }
+  
+  // ブラウザバック機能: スタート画面に戻る
+  BROWSER_BACK.currentScreen = 'start';
 }
 
 function showMyPage() {
@@ -639,6 +733,9 @@ function showMyPage() {
   // 既存の動的オーバーレイのみを削除（固定の図鑑オーバーレイは残す）
   var existingDynamicOverlays = document.querySelectorAll('.overlay:not(#pokedexScreen):not(#gameOverlay)');
   existingDynamicOverlays.forEach(function(overlay) { overlay.remove(); });
+  
+  // ブラウザバック機能: マイページに移動
+  BROWSER_BACK.pushState('mypage');
   
   var myPageScreen = document.createElement('div');
   myPageScreen.className = 'overlay';
@@ -695,7 +792,7 @@ function showMyPage() {
 }
 
 function shareToX() {
-  var text = encodeURIComponent('はむケツぽよぽよで遊んでみてね！🹁✨\nはむケツを4個以上つなげて、ぷるぷる消すパズルゲーム\n\n#はむちら #はむケツぽよぽよ');
+  var text = encodeURIComponent('はむケツぽよぽよで遊んでみてね！🹐✨\nはむケツを4個以上つなげて、ぷるぷる消すパズルゲーム\n\n#はむチラ #はむケツぽよぽよ');
   var url = encodeURIComponent('https://hamuchiranagaya.github.io/ketsu-poyo/');
   window.open('https://twitter.com/intent/tweet?text=' + text + '&url=' + url, '_blank');
 }
@@ -727,6 +824,9 @@ function backToStart() {
   document.getElementById('gameArea').classList.remove('active');
   document.getElementById('startScreen').style.display = 'block';
   hideGameOverlay();
+  
+  // ブラウザバック機能: スタート画面に戻る
+  BROWSER_BACK.currentScreen = 'start';
 }
 
 function restart() {
@@ -748,7 +848,7 @@ function restart() {
 }
 
 function shareResult() {
-  var text = encodeURIComponent('はむケツぽよぽよでスコア ' + score + ' 点を記録！🹁✨\nはむケツを4個以上つなげて、ぷるぷる消すパズルゲーム\n\n#はむちら #はむケツぽよぽよ');
+  var text = encodeURIComponent('はむケツぽよぽよでスコア ' + score + ' 点を記録！🹐✨\nはむケツを4個以上つなげて、ぷるぷる消すパズルゲーム\n\n#はむチラ #はむケツぽよぽよ');
   var url = encodeURIComponent('https://hamuchiranagaya.github.io/ketsu-poyo/');
   window.open('https://twitter.com/intent/tweet?text=' + text + '&url=' + url, '_blank');
 }
@@ -1380,34 +1480,9 @@ function gameOverNow(reason) {
   
   setTimeout(function() {
     try {
-      showGameOverlay('🹁 Game Over 🹁', reason + ' スコア: ' + score);
+      showGameOverlay('🹐 Game Over 🹐', reason + ' スコア: ' + score);
     } catch (displayError) {
       alert('Game Over\n' + reason + '\nスコア: ' + score);
-    }
-  }, 100);
-  
-  setTimeout(function() {
-    try {
-      var savedScores = saveScore(score);
-      
-      // 統計更新（重要：ここで称号チェックも実行される）
-      updateStats(score, chain, userStats.totalCleared, timeMode);
-      
-      showBest();
-    } catch (saveError) {
-      console.error('スコア保存エラー:', saveError);
-    }
-  }, 200);
-}
-
-function clearNow() {
-  gameOver = true;
-  
-  setTimeout(function() {
-    try {
-      showGameOverlay('🎉 おめでとう！ 🎉', '全部消しました！ スコア: ' + score);
-    } catch (displayError) {
-      alert('おめでとう！\n全部消しました！\nスコア: ' + score);
     }
   }, 100);
   
@@ -1461,7 +1536,7 @@ function hideGameOverlay() {
   }
 }
 
-// 図鑑システム   
+// 図鑑システム    
 function loadPokedex() {
   try {
     if (typeof(Storage) !== "undefined" && localStorage) {
@@ -1501,7 +1576,7 @@ function addToPokedex(type, count) {
     pokedex[key].discovered = true;
     showDiscoveryMessage(type);
     
-    // ◯◯ラバー称号を解放
+    // ○○ラバー称号を解放
     var laverTitleId = 100 + type; // 101-124
     if (TITLE_DATA[laverTitleId]) {
       setTimeout(function() {
@@ -1552,7 +1627,7 @@ function updatePokedexCount() {
   }
 }
 
-// スコアシステム
+// スコアシステム 
 function loadScores() {
   try {
     if (typeof Storage === "undefined" || !localStorage) {
@@ -1664,6 +1739,9 @@ function showTitleList() {
   var existingDynamicOverlays = document.querySelectorAll('.overlay:not(#pokedexScreen):not(#gameOverlay)');
   existingDynamicOverlays.forEach(function(overlay) { overlay.remove(); });
   
+  // ブラウザバック機能: 称号一覧に移動
+  BROWSER_BACK.pushState('titlelist');
+  
   var titleListScreen = document.createElement('div');
   titleListScreen.className = 'overlay';
   titleListScreen.style.display = 'flex';
@@ -1748,6 +1826,9 @@ function showIconSelect() {
   var existingDynamicOverlays = document.querySelectorAll('.overlay:not(#pokedexScreen):not(#gameOverlay)');
   existingDynamicOverlays.forEach(function(overlay) { overlay.remove(); });
   
+  // ブラウザバック機能: アイコン選択に移動
+  BROWSER_BACK.pushState('iconselect');
+  
   // 画像システムの初期化を確実に行う
   IMAGE_MANAGER.loadAllStageImages();
   
@@ -1825,7 +1906,7 @@ function shareMyPage(platform) {
       'ベストスコア: ' + bestScore + '点\n\n' +
       'はむケツを集めてぷるぷる消すゲーム 🎮\n' +
       'はむケツぽよぽよ、ぜひ遊んでみてね！\n' +
-      '#ハムスター #はむちら #はむケツぽよぽよ';
+      '#ハムスター #はむチラ #はむケツぽよぽよ';
     
     var gameUrl = 'https://hamuchiranagaya.github.io/ketsu-poyo/';
     
@@ -2038,6 +2119,9 @@ window.addEventListener('resize', fit);
 window.addEventListener('load', function() {
   console.log('ページ読み込み完了');
   
+  // ブラウザバック機能を初期化
+  BROWSER_BACK.init();
+  
   // 全ステージの画像を初期化時に読み込み開始
   IMAGE_MANAGER.loadAllStageImages();
   
@@ -2073,4 +2157,29 @@ window.rotate = rotate;
 window.toggleTimeMode = toggleTimeMode;
 </script>
 </body>
-</html>
+</html>(score);
+      
+      // 統計更新（重要：ここで称号チェックも実行される）
+      updateStats(score, chain, userStats.totalCleared, timeMode);
+      
+      showBest();
+    } catch (saveError) {
+      console.error('スコア保存エラー:', saveError);
+    }
+  }, 200);
+}
+
+function clearNow() {
+  gameOver = true;
+  
+  setTimeout(function() {
+    try {
+      showGameOverlay('🎉 おめでとう！ 🎉', '全部消しました！ スコア: ' + score);
+    } catch (displayError) {
+      alert('おめでとう！\n全部消しました！\nスコア: ' + score);
+    }
+  }, 100);
+  
+  setTimeout(function() {
+    try {
+      var savedScores = saveScore
