@@ -408,6 +408,7 @@ var BROWSER_BACK = {
 // グローバル変数
 var currentStage = 0;
 var gameStarted = false;
+var totalBlocksCleared = 0;
 var grid;
 var falling;
 var nextPair;
@@ -925,6 +926,7 @@ function restart() {
   grid = resetGrid();
   score = 0;
   chain = 0;
+  totalBlocksCleared = 0; // この行を追加
   gameOver = false;
   dropTimer = 0;
   resolving = false;
@@ -1275,30 +1277,26 @@ function scanForMatches() {
     phase = 1;
     phaseTimer = 0;
     updateHUD();
-  } else {
-    if (chain > 0) {
-      chain = 0;
-      updateHUD();
-    }
-    
-    resolving = false;
-    falling = nextPair;
-    nextPair = newPair();
-    
-    var hasBlocks = false;
-    for (var r = 0; r < ROWS; r++) {
-      for (var c = 0; c < COLS; c++) {
-        if (grid[r][c].type) {
-          hasBlocks = true;
-          break;
-        }
+} else {
+  // チェインはリセットしない（累積型に変更）
+  
+  resolving = false;
+  falling = nextPair;
+  nextPair = newPair();
+  
+  var hasBlocks = false;
+  for (var r = 0; r < ROWS; r++) {
+    for (var c = 0; c < COLS; c++) {
+      if (grid[r][c].type) {
+        hasBlocks = true;
+        break;
       }
-      if (hasBlocks) break;
     }
-    
-    if (!hasBlocks) {
-      clearNow();
-    }
+    if (hasBlocks) break;
+  }
+  
+  if (!hasBlocks) {
+    clearNow();
   }
 }
 
@@ -1321,6 +1319,9 @@ function clearMarkedBlocks() {
       }
     }
   }
+  
+  // 消去総数を追加
+  totalBlocksCleared += clearedCount;
   
   Object.keys(clearedTypes).forEach(function(type) {
     if (type > 0) {
@@ -1583,7 +1584,7 @@ function gameOverNow(reason) {
       var savedScores = saveScore(score);
       
       // 統計更新（重要：ここで称号チェックも実行される）
-      updateStats(score, chain, userStats.totalCleared, timeMode);
+      updateStats(score, chain, totalBlocksCleared, timeMode);
       
       showBest();
     } catch (saveError) {
