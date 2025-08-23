@@ -2157,29 +2157,4 @@ window.rotate = rotate;
 window.toggleTimeMode = toggleTimeMode;
 </script>
 </body>
-</html>(score);
-      
-      // 統計更新（重要：ここで称号チェックも実行される）
-      updateStats(score, chain, userStats.totalCleared, timeMode);
-      
-      showBest();
-    } catch (saveError) {
-      console.error('スコア保存エラー:', saveError);
-    }
-  }, 200);
-}
-
-function clearNow() {
-  gameOver = true;
-  
-  setTimeout(function() {
-    try {
-      showGameOverlay('🎉 おめでとう！ 🎉', '全部消しました！ スコア: ' + score);
-    } catch (displayError) {
-      alert('おめでとう！\n全部消しました！\nスコア: ' + score);
-    }
-  }, 100);
-  
-  setTimeout(function() {
-    try {
-      var savedScores = saveScore
+</html>
