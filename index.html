@@ -240,7 +240,7 @@
 </div>
 
 <script>
-// ブラウザバック管理システム（修正版）
+// ブラウザバック管理システム（完全修正版）
 var BROWSER_BACK = {
   currentScreen: 'start',
   initialized: false,
@@ -251,6 +251,9 @@ var BROWSER_BACK = {
     
     // 初期状態をpushState（重要：スタート画面の履歴を作成）
     history.replaceState({ screen: 'start' }, '', '');
+    
+    // さらにもう一つスタート画面の履歴を追加（これが重要！）
+    history.pushState({ screen: 'start' }, '', '');
     
     // popstateイベントリスナー
     window.addEventListener('popstate', this.handlePopState.bind(this));
@@ -264,8 +267,11 @@ var BROWSER_BACK = {
   handlePopState: function(event) {
     var targetScreen = event.state ? event.state.screen : 'start';
     
+    console.log('ブラウザバック検出 - 現在:', this.currentScreen, '目標:', targetScreen);
+    
     // スタート画面でバックボタンが押された場合の対策
-    if (this.currentScreen === 'start' && targetScreen === 'start') {
+    if (this.currentScreen === 'start') {
+      console.log('スタート画面でのバック操作を防止');
       // 履歴を再度追加してブラウザバックを無効化
       history.pushState({ screen: 'start' }, '', '');
       return;
@@ -291,6 +297,8 @@ var BROWSER_BACK = {
   },
   
   goToStart: function() {
+    console.log('スタート画面に戻る処理開始');
+    
     // ゲーム画面を閉じる
     if (gameStarted) {
       gameStarted = false;
@@ -306,7 +314,10 @@ var BROWSER_BACK = {
     this.currentScreen = 'start';
     
     // 重要：スタート画面に戻った後、履歴を再度追加
-    history.pushState({ screen: 'start' }, '', '');
+    setTimeout(() => {
+      history.pushState({ screen: 'start' }, '', '');
+      console.log('スタート画面の履歴を追加完了');
+    }, 100);
   },
   
   goToMyPage: function() {
@@ -546,30 +557,30 @@ var TITLE_DATA = {
 };
 
 var POKEDEX_DATA = {
-  1: { name: "オレケツ", owner: "カフェオレ", youtubeUrl: "https://youtu.be/ryNzm7qFVzc?si=IC1J5szhLJk3oyu9", description: "カフェオレの美味しそうなケツ" },
+  1: { name: "オレケツ", owner: "カフェオレ", youtubeUrl: "https://youtu.be/ryNzm7qFVzc?si=IC1J5szhLJk3oyu9", description: "すぐ強奪しちゃうケツ" },
   2: { name: "バインバイン", owner: "かぬれ", youtubeUrl: "https://youtu.be/uWz_CqxCvjY?si=Cv-N3GAoI6lGIq8l", description: "パインパインと弾むケツ" },
-  3: { name: "黄金比ケツ", owner: "こった", youtubeUrl: "https://youtu.be/I6K_khVgrw0?si=b8Hgg4Ntkb0O_A8-", description: "完璧な黄金比で作られたケツ" },
-  4: { name: "ふらケツ", owner: "フラン", youtubeUrl: "https://youtu.be/sljohJszRQY?si=ERUAGUqYOaRF7uMc", description: "ふらふらと魅力的なケツ" },
+  3: { name: "黄金比ケツ", owner: "こった", youtubeUrl: "https://youtu.be/I6K_khVgrw0?si=b8Hgg4Ntkb0O_A8-", description: "完璧な黄金比のケツ" },
+  4: { name: "ふらケツ", owner: "フラン", youtubeUrl: "https://youtu.be/sljohJszRQY?si=ERUAGUqYOaRF7uMc", description: "ゆらゆら揺れちゃう魅惑的なケツ" },
   5: { name: "デリシャスケツ", owner: "すぷもーね", youtubeUrl: "https://youtu.be/cjBBnWUbSFA?si=5cs98umvW9AY2LXI", description: "美味しそうなデリシャスケツ" },
-  6: { name: "やばケツ", owner: "アマレッティ", youtubeUrl: "https://youtu.be/gX3N5M8Am9Y?si=E1ZusoKkKbtr5lzh", description: "やばいくらい素晴らしいケツ" },
-  7: { name: "ぱんケツ", owner: "ぱんな", youtubeUrl: "https://youtube.com/shorts/hGF6ZgvpJOU?si=T2up9cTIYPmdrNcg", description: "ふわふわパンのようなケツ" },
+  6: { name: "やばケツ", owner: "アマレッティ", youtubeUrl: "https://youtu.be/gX3N5M8Am9Y?si=E1ZusoKkKbtr5lzh", description: "やばれってぃのやばすぎて震えたくなるケツ" },
+  7: { name: "ぱんケツ", owner: "ぱんな", youtubeUrl: "https://youtube.com/shorts/hGF6ZgvpJOU?si=T2up9cTIYPmdrNcg", description: "エステに励む美意識高いケツ" },
   8: { name: "しらたまケツ", owner: "しゅくれ", youtubeUrl: "https://www.youtube.com/playlist?list=PLpF705pFAL33lcPjtwFPaEtMrSzNEUh0o", description: "白玉のようにふんわりしたケツ" },
   9: { name: "ころケツ", owner: "ころん", youtubeUrl: "", description: "ころころと可愛いケツ" },
-  10: { name: "ソイけつ", owner: "ソイラテ", youtubeUrl: "https://youtu.be/LYIQSYtYdUE", description: "ソイラテのような優しいケツ" },
-  11: { name: "フィナけつ", owner: "フィナンシェ", youtubeUrl: "https://youtu.be/ZNxXAzQSnQU?si=pcM2s7OSoMcSIE59", description: "フィナンシェのように上品なケツ" },
-  12: { name: "かるケツ", owner: "かるめら", youtubeUrl: "https://www.youtube.com/watch?v=qPglcK9qugU", description: "軽やかで甘いケツ" },
-  13: { name: "ぽんケツ", owner: "ふぉんでゅ", youtubeUrl: "https://youtu.be/uW_A5cBfD5A?si=SiSYQuDWjg-Z7HJv", description: "ふわっとしたケツ" },
-  14: { name: "パナけつ", owner: "コンパナ", youtubeUrl: "https://youtu.be/n4NmDuZn3Vw", description: "コンパナの個性的なケツ" },
-  15: { name: "土管ケツ", owner: "さぶれ", youtubeUrl: "https://youtube.com/shorts/0j8r4IpjwA8", description: "土管のようにしっかりしたケツ" },
+  10: { name: "ソイけつ", owner: "ソイラテ", youtubeUrl: "https://youtu.be/LYIQSYtYdUE", description: "優しく賢いおケツ" },
+  11: { name: "フィナけつ", owner: "フィナンシェ", youtubeUrl: "https://youtu.be/ZNxXAzQSnQU?si=pcM2s7OSoMcSIE59", description: "空飛ぶ系風船のように丸いケツ" },
+  12: { name: "かるケツ", owner: "かるめら", youtubeUrl: "https://www.youtube.com/watch?v=qPglcK9qugU", description: "ふんわり丸くて美味しそうなケツ" },
+  13: { name: "ぽんケツ", owner: "ふぉんでゅ", youtubeUrl: "https://youtu.be/uW_A5cBfD5A?si=SiSYQuDWjg-Z7HJv", description: "黄ばんだケツ" },
+  14: { name: "パナけつ", owner: "コンパナ", youtubeUrl: "https://youtu.be/n4NmDuZn3Vw", description: "こんがり焼き色がついたケツ" },
+  15: { name: "土管ケツ", owner: "さぶれ", youtubeUrl: "https://youtube.com/shorts/0j8r4IpjwA8", description: "土管に潜むこぶりなケツ" },
   16: { name: "こんケツ", owner: "アフォガート", youtubeUrl: "https://youtube.com/shorts/SVHDfDEDinY", description: "アフォガートのように濃厚なケツ" },
   17: { name: "こふケツ", owner: "こふれ", youtubeUrl: "https://www.youtube.com/shorts/tv6u2VqxHjY", description: "こふれのふんわりケツ" },
   18: { name: "モカけつ", owner: "カフェモカ", youtubeUrl: "https://www.youtube.com/watch?v=h5J52O-He5E", description: "モカの香り豊かなケツ" },
   19: { name: "ぴちケツ", owner: "ぴち子", youtubeUrl: "https://youtu.be/xCK61SkvB3c?si=cmt9b539WhpYqPKs", description: "ぴちぴちで元気なケツ" },
   20: { name: "脳筋ケツ", owner: "ロッシェ", youtubeUrl: "https://youtube.com/shorts/_mpykWqD0EQ", description: "筋肉質で力強いケツ" },
-  21: { name: "お月見ケツ", owner: "リコッタ", youtubeUrl: "https://youtu.be/qmGBbk9Pr68", description: "お月見にぴったりな風流なケツ" },
+  21: { name: "お月見ケツ", owner: "リコッタ", youtubeUrl: "https://youtu.be/qmGBbk9Pr68", description: "張りのあるレモン風味のケツ" },
   22: { name: "ダーけつ", owner: "ダークモカ", youtubeUrl: "https://www.youtube.com/shorts/GWAJRHFY1dg", description: "ダークな魅力のケツ" },
-  23: { name: "シゴデキケツ", owner: "ブラウニー", youtubeUrl: "https://www.youtube.com/watch?v=I6K_khVgrw0", description: "仕事のできるケツ" },
-  24: { name: "ぺこケツ", owner: "ぺこりーの", youtubeUrl: "https://youtube.com/shorts/xPxy5r9RhaY", description: "ぺこりと可愛いケツ" }
+  23: { name: "シゴデキケツ", owner: "ブラウニー", youtubeUrl: "https://www.youtube.com/watch?v=I6K_khVgrw0", description: "15分で2ゴール決めるケツ" },
+  24: { name: "ぺこケツ", owner: "ぺこりーの", youtubeUrl: "https://youtube.com/shorts/xPxy5r9RhaY", description: "食いしん坊なケツ" }
 };
 
 var userStats = {
