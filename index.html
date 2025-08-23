@@ -924,7 +924,7 @@ function backToStart() {
 function restart() {
   grid = resetGrid();
   score = 0;
-  chain = 0;
+  chain = 0;  // ゲーム開始時のみリセット
   gameOver = false;
   dropTimer = 0;
   resolving = false;
@@ -937,6 +937,17 @@ function restart() {
   
   updateHUD();
   hideGameOverlay();
+}
+
+function clearNow() {
+  // 完全クリア時の特別処理
+  var clearBonus = 1000; // クリアボーナス
+  score += clearBonus;
+  updateHUD();
+  
+  setTimeout(function() {
+    gameOverNow('完全クリア！おめでとう！');
+  }, 1000);
 }
 
 function shareResult() {
@@ -1265,21 +1276,24 @@ function scanForMatches() {
   }
 
   if (totalCleared > 0) {
+    // チェイン数を累積で増加（リセットしない）
     chain++;
+    
+    // 新しいスコア計算: 基本点数 × チェイン倍率
     var basePoints = totalCleared * 10;
-    var chainBonus = chain > 1 ? Math.pow(2, chain - 1) : 1;
-    var addedPoints = Math.floor(basePoints * chainBonus);
+    var chainMultiplier = chain; // チェイン数がそのまま倍率
+    var addedPoints = basePoints * chainMultiplier;
     
     score += addedPoints;
+    
+    console.log('チェイン:', chain, '消去数:', totalCleared, '基本点:', basePoints, '倍率:', chainMultiplier, '獲得点:', addedPoints);
     
     phase = 1;
     phaseTimer = 0;
     updateHUD();
   } else {
-    if (chain > 0) {
-      chain = 0;
-      updateHUD();
-    }
+    // ブロックが消去されなかった場合のみ、解決フェーズを終了
+    // チェインカウントはリセットしない（1プレイ中は維持）
     
     resolving = false;
     falling = nextPair;
@@ -2066,14 +2080,9 @@ function updateStats(newScore, newChain, blocksCleared, isTimeMode) {
   if (newScore > userStats.maxScore) {
     userStats.maxScore = newScore;
   }
-  
-  // チェイン値の更新（ゲーム中の最大チェインを追跡）
-  var currentMaxChain = Math.max(userStats.maxChain || 0, newChain);
-  if (currentMaxChain > userStats.maxChain) {
-    userStats.maxChain = currentMaxChain;
-    console.log('最高チェイン更新:', userStats.maxChain);
+  if (newChain > userStats.maxChain) {
+    userStats.maxChain = newChain;
   }
-  
   userStats.gamesPlayed++;
   // 注意: totalClearedはclearMarkedBlocks関数で既に更新されているので、ここでは追加しない
   
