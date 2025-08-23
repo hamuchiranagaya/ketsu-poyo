@@ -211,6 +211,7 @@
 <!-- 図鑑画面オーバーレイ -->
 <div id="pokedexScreen" class="overlay">
   <div class="card pokedex-card">
+     <button onclick="closePokedex()" style="position: absolute; top: 10px; right: 15px; background: rgba(255,255,255,0.8); border: none; border-radius: 50%; width: 30px; height: 30px; cursor: pointer; font-size: 16px; color: #333;">×</button>
     <h3>📖 はむケツ図鑑 📖</h3>
     <p>はむケツを30個消すと図鑑に登録されます！</p>
     
@@ -1806,7 +1807,7 @@ function showTitleList() {
       '<h3 style="margin: 16px 0;">🏆 称号一覧</h3>' +
       '<div style="margin: 20px 0;">' + titleListHTML + '</div>' +
       '<div class="row" style="margin-top: 20px;">' +
-        '<button onclick="this.parentElement.parentElement.parentElement.remove(); showMyPage();" style="background: linear-gradient(135deg, #ff6b6b, #ff8e8e);">戻る</button>' +
+        '<button onclick="this.parentElement.parentElement.parentElement.remove(); showMyPage();" style="background: linear-gradient(135deg, #ff6b6b, #ff8e8e);">決定</button>' +
       '</div>' +
     '</div>';
   
@@ -1876,7 +1877,7 @@ function showIconSelect() {
       '<p style="font-size: 12px; opacity: 0.8;">発見済みのはむケツから選択できます</p>' +
       '<div style="margin: 20px 0; display: flex; flex-wrap: wrap; justify-content: center;">' + iconListHTML + '</div>' +
       '<div class="row" style="margin-top: 20px;">' +
-        '<button onclick="this.parentElement.parentElement.parentElement.remove(); showMyPage();" style="background: linear-gradient(135deg, #ff6b6b, #ff8e8e);">戻る</button>' +
+        '<button onclick="this.parentElement.parentElement.parentElement.remove(); showMyPage();" style="background: linear-gradient(135deg, #ff6b6b, #ff8e8e);">決定</button>' +
       '</div>' +
     '</div>';
   
