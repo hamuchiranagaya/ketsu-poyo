@@ -240,7 +240,7 @@
 </div>
 
 <script>
-// ブラウザバック管理システム（完全修正版）
+// ブラウザバック管理システム（確認ダイアログ付き）
 var BROWSER_BACK = {
   currentScreen: 'start',
   initialized: false,
@@ -277,9 +277,18 @@ var BROWSER_BACK = {
       return;
     }
     
+    // ゲーム画面でのバック操作時は確認ダイアログを表示
+    if (this.currentScreen === 'game') {
+      console.log('ゲーム画面でのバック操作 - 確認ダイアログを表示');
+      // 履歴を戻してゲーム画面を維持
+      history.pushState({ screen: 'game' }, '', '');
+      // 確認ダイアログを表示
+      this.showGameExitConfirmation();
+      return;
+    }
+    
     // 現在の画面から適切な戻り先に移動
     switch (this.currentScreen) {
-      case 'game':
       case 'pokedex':
         this.goToStart();
         break;
@@ -296,8 +305,56 @@ var BROWSER_BACK = {
     }
   },
   
+  showGameExitConfirmation: function() {
+    // 確認ダイアログのオーバーレイを作成
+    var confirmationOverlay = document.createElement('div');
+    confirmationOverlay.id = 'gameExitConfirmation';
+    confirmationOverlay.className = 'overlay';
+    confirmationOverlay.style.display = 'flex';
+    confirmationOverlay.style.zIndex = '2000'; // 他のオーバーレイより上に表示
+    
+    confirmationOverlay.innerHTML = 
+      '<div class="card" style="max-width: 400px; text-align: center;">' +
+        '<h3 style="margin: 16px 0; color: #fff;">⚠️ ゲーム終了確認</h3>' +
+        '<p style="color: #fff; font-size: 16px; margin: 20px 0; line-height: 1.5;">ゲームを終了してスタート画面に戻りますか？<br/>進行中のゲームは失われます。</p>' +
+        '<div class="row" style="margin-top: 24px; gap: 16px;">' +
+          '<button onclick="BROWSER_BACK.confirmGameExit()" style="flex: 1; background: linear-gradient(135deg, #ff6b6b, #ff4757); font-size: 16px; font-weight: bold;">はい、終了する</button>' +
+          '<button onclick="BROWSER_BACK.cancelGameExit()" style="flex: 1; background: linear-gradient(135deg, #4facfe, #00f2fe); font-size: 16px; font-weight: bold;">いいえ、続ける</button>' +
+        '</div>' +
+      '</div>';
+    
+    document.body.appendChild(confirmationOverlay);
+    
+    // フェードイン効果
+    setTimeout(function() {
+      confirmationOverlay.style.opacity = '1';
+    }, 50);
+  },
+  
+  confirmGameExit: function() {
+    console.log('ゲーム終了が確認されました');
+    this.removeGameExitConfirmation();
+    this.goToStart();
+  },
+  
+  cancelGameExit: function() {
+    console.log('ゲーム継続が選択されました');
+    this.removeGameExitConfirmation();
+    // ゲームを継続（特に何もしない）
+  },
+  
+  removeGameExitConfirmation: function() {
+    var confirmationOverlay = document.getElementById('gameExitConfirmation');
+    if (confirmationOverlay) {
+      confirmationOverlay.remove();
+    }
+  },
+  
   goToStart: function() {
     console.log('スタート画面に戻る処理開始');
+    
+    // 確認ダイアログが残っている場合は削除
+    this.removeGameExitConfirmation();
     
     // ゲーム画面を閉じる
     if (gameStarted) {
@@ -595,6 +652,11 @@ var userStats = {
   fastClear60: false // 60秒以内クリア達成フラグ
 };
 
+  // 永続化の既存値を読み込み・マージ
+mergeLoadedUserStats(userStats);
+// 起動時点の整合を保存（初回なら作成）
+saveUserStats();
+  
 // UI関数（ブラウザバック機能追加）
 function selectStage(stageIndex) {
   console.log('ステージ選択:', stageIndex);
@@ -1248,28 +1310,76 @@ function scanForMatches() {
 function clearMarkedBlocks() {
   var clearedCount = 0;
   var clearedTypes = {};
-  
+
   for (var r = 0; r < ROWS; r++) {
     for (var c = 0; c < COLS; c++) {
       if (grid[r][c].mark) {
         var type = grid[r][c].type;
-        
-        if (!clearedTypes[type]) {
-          clearedTypes[type] = 0;
-        }
+        if (!clearedTypes[type]) clearedTypes[type] = 0;
         clearedTypes[type]++;
-        
         grid[r][c] = empty();
         clearedCount++;
       }
     }
   }
+
+  // ★ ここで「累積」に反映（= セッションを超えて積み上がる）
+  if (!userStats || typeof userStats.totalCleared !== 'number') {
+    userStats = Object.assign({ totalCleared: 0 }, userStats || {});
+  }
+  userStats.totalCleared += clearedCount;
+saveUserStats(); // ← 関数ができたので素で呼ぶ
+
+  // ===== userStats の永続化（保存/読込/マージ） =====
+function loadUserStats() {
+  try {
+    // 現行キー
+    var cur = localStorage.getItem('ham_poyo_userStats');
+    if (cur) return JSON.parse(cur);
+
+    // 古いキーがある場合に救済（任意）
+    var legacy = localStorage.getItem('hamketsu_userStats');
+    if (legacy) return JSON.parse(legacy);
+  } catch (e) {}
+  return {};
+}
+
+function saveUserStats() {
+  try {
+    localStorage.setItem('ham_poyo_userStats', JSON.stringify(userStats));
+  } catch (e) {
+    console.warn('saveUserStats failed:', e);
+  }
+}
+
+// 起動時に保存済みの値をマージ（既存値を優先）
+function mergeLoadedUserStats(base) {
+  var loaded = loadUserStats();
+  if (loaded && typeof loaded === 'object') {
+    Object.keys(loaded).forEach(function(k){
+      base[k] = loaded[k];
+    });
+  }
+  // 型補正（欠けていたらデフォルトを入れる）
+  if (typeof base.maxScore !== 'number') base.maxScore = 0;
+  if (typeof base.maxChain !== 'number') base.maxChain = 0;
+  if (typeof base.gamesPlayed !== 'number') base.gamesPlayed = 0;
+  if (typeof base.totalCleared !== 'number') base.totalCleared = 0;
+  if (typeof base.timeModeClears !== 'number') base.timeModeClears = 0;
+  if (typeof base.timeModePlayCount !== 'number') base.timeModePlayCount = 0;
+  if (typeof base.selectedTitle !== 'number') base.selectedTitle = 1;
+  if (typeof base.selectedIcon !== 'number') base.selectedIcon = 0;
+  if (typeof base.fastClear60 !== 'boolean') base.fastClear60 = false;
+}
   
+  // 図鑑側の加算（種類別）
   Object.keys(clearedTypes).forEach(function(type) {
     if (type > 0) {
       addToPokedex(parseInt(type), clearedTypes[type]);
     }
   });
+
+  return clearedCount; // 返しているなら維持
 }
 
 function dropBlocks() {
@@ -1998,16 +2108,19 @@ function saveUserStats() {
 function updateStats(newScore, newChain, blocksCleared, isTimeMode) {
   console.log('統計更新開始 - スコア:', newScore, 'チェイン:', newChain);
   
-  // 統計更新
+  // ベスト更新
   if (newScore > userStats.maxScore) {
     userStats.maxScore = newScore;
   }
   if (newChain > userStats.maxChain) {
     userStats.maxChain = newChain;
   }
+
+  // プレイ回数
   userStats.gamesPlayed++;
-  userStats.totalCleared += blocksCleared || 0;
-  
+
+  // ★ totalCleared の加算は clearMarkedBlocks() ですでに行うのでここではしない
+
   // 制限時間モード統計更新
   if (isTimeMode) {
     userStats.timeModePlayCount++;
@@ -2015,7 +2128,7 @@ function updateStats(newScore, newChain, blocksCleared, isTimeMode) {
       userStats.timeModeClears++;
     }
   }
-  
+
   // 称号チェック
   checkAndUnlockTitles();
   saveUserStats();
