@@ -193,14 +193,14 @@
 
     <canvas id="game" width="384" height="640"></canvas>
 
-    <div class="btnbar" aria-label="タップ操作">
-      <button onclick="rotate()">↺</button>
-      <button onclick="moveLeft()">←</button>
-      <button onclick="softDrop()">↓</button>
-      <button onclick="moveRight()">→</button>
-      <button onclick="rotate()">↻</button>
-      <button class="wide" onclick="hardDrop()">瞬間落下</button>
-    </div>
+<div class="btnbar" role="toolbar" aria-label="ゲーム操作ボタン">
+  <button onclick="rotate()" aria-label="ブロックを左に回転">↺</button>
+  <button onclick="moveLeft()" aria-label="ブロックを左に移動">←</button>
+  <button onclick="softDrop()" aria-label="ブロックを下に移動">↓</button>
+  <button onclick="moveRight()" aria-label="ブロックを右に移動">→</button>
+  <button onclick="rotate()" aria-label="ブロックを右に回転">↻</button>
+  <button class="wide" onclick="hardDrop()">瞬間落下</button>
+</div>
 
     <div class="note">
       操作：← → 移動 / ↑ 回転 / ↓ ソフトドロップ / スペース 瞬間落下 / R リスタート
@@ -535,10 +535,10 @@ var TITLE_DATA = {
 
 var POKEDEX_DATA = {
   1: { name: "オレケツ", owner: "カフェオレ", youtubeUrl: "", description: "カフェオレの美味しそうなケツ" },
-  2: { name: "パインパイン", owner: "かれれ", youtubeUrl: "", description: "パインパインと弾むケツ" },
-  3: { name: "黄金比ケツ", owner: "ごった", youtubeUrl: "", description: "完璧な黄金比で作られたケツ" },
+  2: { name: "バインバイン", owner: "かぬれ", youtubeUrl: "", description: "パインパインと弾むケツ" },
+  3: { name: "黄金比ケツ", owner: "こった", youtubeUrl: "", description: "完璧な黄金比で作られたケツ" },
   4: { name: "ふらケツ", owner: "フラン", youtubeUrl: "", description: "ふらふらと魅力的なケツ" },
-  5: { name: "デリシャスケツ", owner: "すぷも～ね", youtubeUrl: "", description: "美味しそうなデリシャスケツ" },
+  5: { name: "デリシャスケツ", owner: "すぷもーね", youtubeUrl: "", description: "美味しそうなデリシャスケツ" },
   6: { name: "やばケツ", owner: "アマレッティ", youtubeUrl: "", description: "やばいくらい素晴らしいケツ" },
   7: { name: "ぱんケツ", owner: "ぱんな", youtubeUrl: "", description: "ふわふわパンのようなケツ" },
   8: { name: "夏の太陽ケツ", owner: "なつちゃん", youtubeUrl: "", description: "夏の太陽のように輝くケツ" },
