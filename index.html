@@ -1656,7 +1656,10 @@ function savePokedex(pokedex) {
 function addToPokedex(type, count) {
   if (count === undefined) count = 1;
   var pokedex = loadPokedex();
-  var key = 'type_' + type;
+  
+  // 現在のステージに基づいて正しいIDを計算
+  var actualId = (currentStage * 6) + type;
+  var key = 'type_' + actualId;  // ← 修正
   
   if (!pokedex[key]) {
     pokedex[key] = { count: 0, discovered: false };
@@ -1666,14 +1669,14 @@ function addToPokedex(type, count) {
   
   if (pokedex[key].count >= 30 && !pokedex[key].discovered) {
     pokedex[key].discovered = true;
-    showDiscoveryMessage(type);
+    showDiscoveryMessage(actualId);  // ← 修正
     
     // ○○ラバー称号を解放
-    var laverTitleId = 100 + type; // 101-124
+    var laverTitleId = 100 + actualId;  // ← 修正
     if (TITLE_DATA[laverTitleId]) {
       setTimeout(function() {
         unlockTitle(laverTitleId);
-      }, 1500); // 発見メッセージの後に表示
+      }, 1500);
     }
   }
   
