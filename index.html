@@ -1481,7 +1481,7 @@ function gameOverNow(reason) {
   
   setTimeout(function() {
     try {
-      showGameOverlay('🹐 Game Over 🹐', reason + ' スコア: ' + score);
+      showGameOverlay(' Game Over ', reason + ' スコア: ' + score);
     } catch (displayError) {
       alert('Game Over\n' + reason + '\nスコア: ' + score);
     }
