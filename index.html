@@ -652,11 +652,6 @@ var userStats = {
   fastClear60: false // 60秒以内クリア達成フラグ
 };
 
-  // 永続化の既存値を読み込み・マージ
-mergeLoadedUserStats(userStats);
-// 起動時点の整合を保存（初回なら作成）
-saveUserStats();
-  
 // UI関数（ブラウザバック機能追加）
 function selectStage(stageIndex) {
   console.log('ステージ選択:', stageIndex);
@@ -1310,76 +1305,28 @@ function scanForMatches() {
 function clearMarkedBlocks() {
   var clearedCount = 0;
   var clearedTypes = {};
-
+  
   for (var r = 0; r < ROWS; r++) {
     for (var c = 0; c < COLS; c++) {
       if (grid[r][c].mark) {
         var type = grid[r][c].type;
-        if (!clearedTypes[type]) clearedTypes[type] = 0;
+        
+        if (!clearedTypes[type]) {
+          clearedTypes[type] = 0;
+        }
         clearedTypes[type]++;
+        
         grid[r][c] = empty();
         clearedCount++;
       }
     }
   }
-
-  // ★ ここで「累積」に反映（= セッションを超えて積み上がる）
-  if (!userStats || typeof userStats.totalCleared !== 'number') {
-    userStats = Object.assign({ totalCleared: 0 }, userStats || {});
-  }
-  userStats.totalCleared += clearedCount;
-saveUserStats(); // ← 関数ができたので素で呼ぶ
-
-  // ===== userStats の永続化（保存/読込/マージ） =====
-function loadUserStats() {
-  try {
-    // 現行キー
-    var cur = localStorage.getItem('ham_poyo_userStats');
-    if (cur) return JSON.parse(cur);
-
-    // 古いキーがある場合に救済（任意）
-    var legacy = localStorage.getItem('hamketsu_userStats');
-    if (legacy) return JSON.parse(legacy);
-  } catch (e) {}
-  return {};
-}
-
-function saveUserStats() {
-  try {
-    localStorage.setItem('ham_poyo_userStats', JSON.stringify(userStats));
-  } catch (e) {
-    console.warn('saveUserStats failed:', e);
-  }
-}
-
-// 起動時に保存済みの値をマージ（既存値を優先）
-function mergeLoadedUserStats(base) {
-  var loaded = loadUserStats();
-  if (loaded && typeof loaded === 'object') {
-    Object.keys(loaded).forEach(function(k){
-      base[k] = loaded[k];
-    });
-  }
-  // 型補正（欠けていたらデフォルトを入れる）
-  if (typeof base.maxScore !== 'number') base.maxScore = 0;
-  if (typeof base.maxChain !== 'number') base.maxChain = 0;
-  if (typeof base.gamesPlayed !== 'number') base.gamesPlayed = 0;
-  if (typeof base.totalCleared !== 'number') base.totalCleared = 0;
-  if (typeof base.timeModeClears !== 'number') base.timeModeClears = 0;
-  if (typeof base.timeModePlayCount !== 'number') base.timeModePlayCount = 0;
-  if (typeof base.selectedTitle !== 'number') base.selectedTitle = 1;
-  if (typeof base.selectedIcon !== 'number') base.selectedIcon = 0;
-  if (typeof base.fastClear60 !== 'boolean') base.fastClear60 = false;
-}
   
-  // 図鑑側の加算（種類別）
   Object.keys(clearedTypes).forEach(function(type) {
     if (type > 0) {
       addToPokedex(parseInt(type), clearedTypes[type]);
     }
   });
-
-  return clearedCount; // 返しているなら維持
 }
 
 function dropBlocks() {
@@ -2108,19 +2055,16 @@ function saveUserStats() {
 function updateStats(newScore, newChain, blocksCleared, isTimeMode) {
   console.log('統計更新開始 - スコア:', newScore, 'チェイン:', newChain);
   
-  // ベスト更新
+  // 統計更新
   if (newScore > userStats.maxScore) {
     userStats.maxScore = newScore;
   }
   if (newChain > userStats.maxChain) {
     userStats.maxChain = newChain;
   }
-
-  // プレイ回数
   userStats.gamesPlayed++;
-
-  // ★ totalCleared の加算は clearMarkedBlocks() ですでに行うのでここではしない
-
+  userStats.totalCleared += blocksCleared || 0;
+  
   // 制限時間モード統計更新
   if (isTimeMode) {
     userStats.timeModePlayCount++;
@@ -2128,7 +2072,7 @@ function updateStats(newScore, newChain, blocksCleared, isTimeMode) {
       userStats.timeModeClears++;
     }
   }
-
+  
   // 称号チェック
   checkAndUnlockTitles();
   saveUserStats();
