@@ -1277,26 +1277,27 @@ function scanForMatches() {
     phase = 1;
     phaseTimer = 0;
     updateHUD();
-} else {
-  // チェインはリセットしない（累積型に変更）
-  
-  resolving = false;
-  falling = nextPair;
-  nextPair = newPair();
-  
-  var hasBlocks = false;
-  for (var r = 0; r < ROWS; r++) {
-    for (var c = 0; c < COLS; c++) {
-      if (grid[r][c].type) {
-        hasBlocks = true;
-        break;
+  } else {
+    // チェインはリセットしない（累積型に変更）
+    
+    resolving = false;
+    falling = nextPair;
+    nextPair = newPair();
+    
+    var hasBlocks = false;
+    for (var r = 0; r < ROWS; r++) {
+      for (var c = 0; c < COLS; c++) {
+        if (grid[r][c].type) {
+          hasBlocks = true;
+          break;
+        }
       }
+      if (hasBlocks) break;
     }
-    if (hasBlocks) break;
-  }
-  
-  if (!hasBlocks) {
-    clearNow();
+    
+    if (!hasBlocks) {
+      gameOverNow('クリア！');
+    }
   }
 }
 
