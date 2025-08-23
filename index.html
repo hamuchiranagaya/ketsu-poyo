@@ -240,16 +240,16 @@
 </div>
 
 <script>
-// ブラウザバック管理システム
+// ブラウザバック管理システム（修正版）
 var BROWSER_BACK = {
-  currentScreen: 'start', // start, game, pokedex, mypage, titlelist, iconselect
+  currentScreen: 'start',
   initialized: false,
   
   init: function() {
     if (this.initialized) return;
     this.initialized = true;
     
-    // 初期状態をpushState
+    // 初期状態をpushState（重要：スタート画面の履歴を作成）
     history.replaceState({ screen: 'start' }, '', '');
     
     // popstateイベントリスナー
@@ -264,10 +264,19 @@ var BROWSER_BACK = {
   handlePopState: function(event) {
     var targetScreen = event.state ? event.state.screen : 'start';
     
+    // スタート画面でバックボタンが押された場合の対策
+    if (this.currentScreen === 'start' && targetScreen === 'start') {
+      // 履歴を再度追加してブラウザバックを無効化
+      history.pushState({ screen: 'start' }, '', '');
+      return;
+    }
+    
     // 現在の画面から適切な戻り先に移動
     switch (this.currentScreen) {
       case 'game':
       case 'pokedex':
+        this.goToStart();
+        break;
       case 'mypage':
         this.goToStart();
         break;
@@ -295,6 +304,9 @@ var BROWSER_BACK = {
     this.closeAllOverlays();
     
     this.currentScreen = 'start';
+    
+    // 重要：スタート画面に戻った後、履歴を再度追加
+    history.pushState({ screen: 'start' }, '', '');
   },
   
   goToMyPage: function() {
