@@ -11,9 +11,319 @@
   <meta name="theme-color" content="#4facfe">
   <link rel="icon" href="ketsupoyo.png" type="image/png">
   
-  <script>
-// 最初にすべての関数を定義
-console.log('関数定義開始');
+  <style>
+    :root{--bg:linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);--panel:#2a3f5f;--fg:#fff;--muted:#b8c6db;--btn:#34495e;--accent:#f39c12;--card-bg:#34495e;}
+    html,body{margin:0;padding:0;background:var(--bg);color:var(--fg);font-family:system-ui,-apple-system,'Segoe UI',Roboto,'Hiragino Sans',sans-serif;min-height:100vh}
+    body{background:linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)}
+    #wrap{display:flex;flex-direction:column;align-items:center;gap:10px;padding:12px 8px}
+    header{display:flex;align-items:center;gap:10px}
+    header img{width:40px;height:40px;border-radius:8px;display:none}
+    header.ready img{display:block}
+    h1, h2{margin:0;font-size:20px;font-weight:800;text-align:center;text-shadow:2px 2px 4px rgba(0,0,0,0.3)}
+    h1{font-size:32px;color:#fff}
+    canvas{background:var(--panel);border-radius:12px;box-shadow:0 8px 24px rgba(0,0,0,.35)}
+    .hud{display:flex;gap:14px;align-items:center;justify-content:center;flex-wrap:wrap}
+    .hud .muted{color:var(--muted)}
+    .btnbar{display:flex;justify-content:space-between;gap:4px;width:100%;touch-action:manipulation;flex-wrap:wrap}
+    .btnbar > button{flex:1;max-width:19%;height:60px;border:none;border-radius:12px;background:var(--btn);color:var(--fg);font-weight:700;font-size:14px;box-shadow:0 4px 12px rgba(0,0,0,.25)}
+    .btnbar > button:active{transform:translateY(1px);opacity:.9}
+    .btnbar > .wide{flex:1 1 100%;max-width:100%;margin-top:8px}
+    .note{opacity:.85;font-size:12px;text-align:center;line-height:1.4;max-width:620px;color:#fff;text-shadow:1px 1px 2px rgba(0,0,0,0.3)}
+    a{color:var(--accent);text-decoration:none}
+    a:hover{text-decoration:underline}
+    .pill{background:rgba(255,255,255,0.2);border-radius:999px;padding:6px 10px;font-size:12px;cursor:pointer;border:none;color:var(--fg);backdrop-filter:blur(10px)}
+    .pill:hover{background:rgba(255,255,255,0.3)}
+    .overlay{position:fixed;inset:0;background:rgba(0,0,0,.7);display:none;align-items:center;justify-content:center;padding:16px;z-index:1000;backdrop-filter:blur(5px)}
+    .card{background:linear-gradient(135deg, #ff6b6b, #ffa500, #ff69b4, #9c88ff);border:3px solid rgba(255,255,255,0.9);border-radius:24px;max-width:520px;width:96%;padding:24px;box-shadow:0 20px 40px rgba(0,0,0,.5), 0 0 20px rgba(255,255,255,0.2);position:relative;overflow:hidden;animation:cardPop 0.5s ease-out}
+    @keyframes cardPop{0%{transform:scale(0.5) rotate(-5deg);opacity:0}50%{transform:scale(1.1) rotate(2deg)}100%{transform:scale(1) rotate(0deg);opacity:1}}
+    .card::before{content:'';position:absolute;top:-50%;left:-50%;width:200%;height:200%;background:linear-gradient(45deg, transparent, rgba(255,255,255,0.15), transparent);animation:shimmer 2s infinite;pointer-events:none}
+    @keyframes shimmer{0%{transform:translateX(-100%) translateY(-100%) rotate(45deg)}100%{transform:translateX(100%) translateY(100%) rotate(45deg)}}
+    .card h3{margin:8px 0 16px 0;font-size:32px;color:#fff;text-shadow:3px 3px 6px rgba(0,0,0,0.6);text-align:center;font-weight:bold;animation:titleBounce 0.8s ease-out 0.2s both}
+    @keyframes titleBounce{0%{transform:translateY(-20px);opacity:0}60%{transform:translateY(5px)}100%{transform:translateY(0);opacity:1}}
+    .card p{color:#fff;font-size:18px;text-shadow:2px 2px 4px rgba(0,0,0,0.6);text-align:center;margin:16px 0;animation:fadeInUp 0.6s ease-out 0.4s both}
+    @keyframes fadeInUp{0%{transform:translateY(20px);opacity:0}100%{transform:translateY(0);opacity:1}}
+    .row{display:flex;gap:16px;flex-wrap:wrap;justify-content:center;animation:fadeInUp 0.6s ease-out 0.6s both}
+    .row button{background:linear-gradient(135deg, #4facfe, #00f2fe);border:3px solid rgba(255,255,255,0.9);border-radius:20px;padding:14px 24px;color:#fff;font-weight:700;cursor:pointer;font-size:16px;text-shadow:1px 1px 2px rgba(0,0,0,0.4);transition:all 0.3s;box-shadow:0 6px 15px rgba(0,0,0,0.3);position:relative;overflow:hidden}
+    .row button::before{content:'';position:absolute;inset:0;background:linear-gradient(45deg, transparent, rgba(255,255,255,0.2), transparent);transform:translateX(-100%);transition:transform 0.6s}
+    .row button:hover::before{transform:translateX(100%)}
+    .row button:hover{transform:translateY(-3px) scale(1.05);box-shadow:0 10px 25px rgba(0,0,0,0.4);background:linear-gradient(135deg, #00f2fe, #4facfe)}
+    .row button:active{transform:translateY(-1px) scale(1.02)}
+    .scores{display:flex;gap:16px;margin:24px 0;justify-content:center;flex-wrap:wrap;animation:fadeInUp 0.6s ease-out 0.5s both}
+    .scores span{background:linear-gradient(135deg, rgba(255,255,255,0.95), rgba(255,255,255,0.8));color:#333;border-radius:16px;padding:10px 16px;font-weight:700;font-size:18px;box-shadow:0 4px 12px rgba(0,0,0,0.3);border:2px solid rgba(255,255,255,0.9);animation:scoreGlow 2s ease-in-out infinite alternate}
+    @keyframes scoreGlow{0%{box-shadow:0 4px 12px rgba(0,0,0,0.3)}100%{box-shadow:0 4px 12px rgba(255,255,255,0.4), 0 0 20px rgba(255,255,255,0.2)}}
+    
+    /* スタート画面 */
+    .start-screen{text-align:center;padding:20px;background:rgba(255,255,255,0.1);border-radius:20px;margin:20px;backdrop-filter:blur(10px);box-shadow:0 8px 32px rgba(0,0,0,0.2)}
+    .start-screen h1{font-size:32px;margin:20px 0;color:#fff;text-shadow:2px 2px 4px rgba(0,0,0,0.3)}
+    .app-icon{width:80px;height:80px;border-radius:16px;margin:0 auto 20px auto;display:block;box-shadow:0 4px 16px rgba(0,0,0,0.3)}
+    .app-icon.ready{display:block}
+    .game-description{font-size:14px;margin:20px 0;color:#fff;line-height:1.6;text-shadow:1px 1px 2px rgba(0,0,0,0.3)}
+    .start-btn{background:linear-gradient(135deg,#f39c12,#e67e22);color:#fff;border:none;border-radius:16px;padding:16px 32px;font-size:18px;font-weight:bold;cursor:pointer;box-shadow:0 8px 24px rgba(243,156,18,.3);margin:20px 0;text-shadow:1px 1px 2px rgba(0,0,0,0.3)}
+    .start-btn:hover{transform:translateY(-2px);box-shadow:0 12px 32px rgba(243,156,18,.4)}
+    .install-section{margin:20px 0;padding:16px;background:rgba(255,255,255,0.1);border-radius:12px;backdrop-filter:blur(10px)}
+    .install-btn{background:rgba(255,255,255,0.2);border:2px dashed rgba(255,255,255,0.4);border-radius:12px;padding:12px 20px;cursor:pointer;display:inline-flex;align-items:center;gap:8px;margin:8px 0;color:#fff;backdrop-filter:blur(10px)}
+    .install-btn:hover{background:rgba(255,255,255,0.3);border-color:rgba(255,255,255,0.6)}
+    .youtube-link{display:block;margin:16px auto;color:var(--accent);font-weight:600;text-shadow:1px 1px 2px rgba(0,0,0,0.3);text-align:center}
+    .youtube-link:hover{color:#fff;text-decoration:underline}
+    .share-buttons{display:flex;gap:12px;justify-content:center;margin:16px 0}
+    .share-btn{background:rgba(255,255,255,0.2);border:none;border-radius:12px;padding:10px 16px;color:#fff;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:6px;backdrop-filter:blur(10px)}
+    .share-btn:hover{background:rgba(255,255,255,0.3)}
+    .share-btn.x-btn{background:rgba(0,0,0,0.3);border:1px solid rgba(255,255,255,0.2)}
+    .share-btn.x-btn:hover{background:rgba(0,0,0,0.5)}
+    
+    /* ステージ選択 */
+    .stage-selection{margin:20px 0}
+    .stage-selection h3{color:#fff;margin-bottom:16px;text-shadow:2px 2px 4px rgba(0,0,0,0.3)}
+    .stage-buttons{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;max-width:400px;margin:0 auto}
+    .stage-btn{background:rgba(255,255,255,0.1);border:2px solid rgba(255,255,255,0.2);border-radius:12px;padding:12px 8px;cursor:pointer;color:#fff;display:flex;flex-direction:column;align-items:center;gap:4px;backdrop-filter:blur(10px);transition:all 0.3s}
+    .stage-btn:hover{background:rgba(255,255,255,0.2);border-color:rgba(255,255,255,0.4)}
+    .stage-btn.active{background:linear-gradient(135deg,#f39c12,#e67e22);border-color:#f39c12;box-shadow:0 4px 12px rgba(243,156,18,.3)}
+    .stage-icon{font-size:24px}
+    .stage-name{font-weight:bold;font-size:14px}
+    .game-area{display:none}
+    .game-area.active{display:flex;flex-direction:column;align-items:center;gap:10px}
+    
+    /* 図鑑画面 */
+    .pokedex-card{max-width: 600px; max-height: 80vh; overflow-y: auto;}
+    .pokedex-grid{display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; margin: 20px 0;}
+    .pokedex-entry{border-radius: 12px; padding: 12px; text-align: center; color: white; font-size: 12px; border: 2px solid; transition: all 0.3s; position: relative;}
+    .pokedex-entry.discovered{background: linear-gradient(135deg, #4facfe, #00f2fe); border-color: rgba(255,255,255,0.8);}
+    .pokedex-entry.discovered:hover{transform: translateY(-2px) scale(1.02); box-shadow: 0 8px 20px rgba(79, 172, 254, 0.4);}
+    .pokedex-entry.undiscovered{background: rgba(255,255,255,0.1); border-color: rgba(255,255,255,0.3);}
+    .pokedex-image{transition: transform 0.3s;}
+    .pokedex-entry.discovered:hover .pokedex-image{transform: scale(1.1);}
+    
+    /* 詳細画面のボタンスタイル */
+    .detail-btn{transition: all 0.3s; position: relative; overflow: hidden;}
+    .detail-btn::before{content: ''; position: absolute; inset: 0; background: linear-gradient(45deg, transparent, rgba(255,255,255,0.2), transparent); transform: translateX(-100%); transition: transform 0.6s;}
+    .detail-btn:hover::before{transform: translateX(100%);}
+    .detail-btn:hover{transform: translateY(-2px); box-shadow: 0 6px 16px rgba(0,0,0,0.3);}
+    
+    /* レスポンシブ対応 */
+    @media (max-width: 480px) {
+      .pokedex-grid{grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 8px;}
+      .pokedex-entry{padding: 8px; font-size: 11px;}
+    }
+  </style>
+</head>
+<body>
+<div id="wrap">
+  <!-- スタート画面 -->
+  <div id="startScreen" class="start-screen">
+    <img id="appicon" src="ketsupoyo.png" alt="アプリアイコン" class="app-icon"/>
+    <h1>はむケツぽよぽよ</h1>
+    
+    <div class="install-section">
+      <p>📱 ホーム画面に追加してアプリのように使えます</p>
+      <button id="installBtn" class="install-btn" style="display: inline-flex;" onclick="simpleInstall()">
+        <span>📲</span>
+        <span id="installText">ホーム画面に追加</span>
+      </button>
+    </div>
+    
+    <div class="game-description">
+      4個以上の同じ色のはむケツをつなげて消そう！<br/>
+      連鎖でスコアアップ！
+    </div>
+    
+    <!-- ステージ選択 -->
+    <div class="stage-selection">
+      <h3>🌸 ステージを選んでね 🌸</h3>
+      <div class="stage-buttons">
+        <button class="stage-btn active" onclick="selectStage(0)">
+          <span class="stage-icon">🌸</span>
+          <span class="stage-name">春のケツ</span>
+        </button>
+        <button class="stage-btn" onclick="selectStage(1)">
+          <span class="stage-icon">🌻</span>
+          <span class="stage-name">夏のケツ</span>
+        </button>
+        <button class="stage-btn" onclick="selectStage(2)">
+          <span class="stage-icon">🍂</span>
+          <span class="stage-name">秋のケツ</span>
+        </button>
+        <button class="stage-btn" onclick="selectStage(3)">
+          <span class="stage-icon">❄️</span>
+          <span class="stage-name">冬のケツ</span>
+        </button>
+      </div>
+    </div>
+    
+    <button class="start-btn" onclick="startGame();">
+      ゲームスタート
+    </button>
+    
+    <!-- 図鑑ボタン -->
+    <button class="start-btn" onclick="showPokedex()" style="font-size: 16px; padding: 12px 24px; margin: 10px 0; background: linear-gradient(135deg, #9c88ff, #6c5ce7);">
+      📖 図鑑を見る (<span id="pokedexCount">0/24</span>)
+    </button>
+    
+    <!-- マイページボタン -->
+    <button class="start-btn" onclick="showMyPage()" style="font-size: 16px; padding: 12px 24px; margin: 10px 0; background: linear-gradient(135deg, #ff6b6b, #ff8e8e);">
+      📄 マイページ
+    </button>
+    
+    <a href="https://youtube.com/@hamuchira" target="_blank" class="youtube-link">
+      🎬 もっと！はむチラ長屋ch.
+    </a>
+    
+    <div class="share-buttons">
+      <button class="share-btn x-btn" onclick="shareToX()">
+        Xでシェア
+      </button>
+      <button class="share-btn" onclick="copyURL()">
+        <span>📋</span>
+        <span id="copyText">URLコピー</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- ゲーム画面 -->
+  <div id="gameArea" class="game-area">
+    <header>
+      <h2>はむケツぽよぽよ</h2>
+    </header>
+
+    <div class="hud">
+      <div>スコア: <span id="score">0</span></div>
+      <div>チェイン: <span id="chain">0</span></div>
+      <div id="timeWrap" class="muted" style="display:none;">残り: <span id="time">180</span>s</div>
+      <button id="mode" class="pill" title="制限時間モード切替" onclick="toggleTimeMode()">制限時間:OFF</button>
+    </div>
+
+    <canvas id="game" width="384" height="640"></canvas>
+
+<div class="btnbar" role="toolbar" aria-label="ゲーム操作ボタン">
+  <button onclick="rotate()" aria-label="ブロックを左に回転">↺</button>
+  <button onclick="moveLeft()" aria-label="ブロックを左に移動">←</button>
+  <button onclick="softDrop()" aria-label="ブロックを下に移動">↓</button>
+  <button onclick="moveRight()" aria-label="ブロックを右に移動">→</button>
+  <button onclick="rotate()" aria-label="ブロックを右に回転">↻</button>
+  <button class="wide" onclick="hardDrop()">瞬間落下</button>
+</div>
+
+    <div class="note">
+      操作：← → 移動 / ↑ 回転 / ↓ ソフトドロップ / スペース 瞬間落下 / R リスタート
+    </div>
+  </div>
+</div>
+
+<!-- 図鑑画面オーバーレイ -->
+<div id="pokedexScreen" class="overlay">
+  <div class="card pokedex-card">
+     <button onclick="closePokedex()" style="position: absolute; top: 10px; right: 15px; background: rgba(255,255,255,0.8); border: none; border-radius: 50%; width: 30px; height: 30px; cursor: pointer; font-size: 16px; color: #333;">×</button>
+    <h3>📖 はむケツ図鑑 📖</h3>
+    <p>はむケツを30個消すと図鑑に登録されます！</p>
+    
+    <div id="pokedexGrid" class="pokedex-grid">
+      <!-- 図鑑エントリがここに動的生成される -->
+    </div>
+    
+    <div class="row" style="margin-top: 20px;">
+      <button onclick="closePokedex()" style="background: linear-gradient(135deg, #ff6b6b, #ff8e8e);">閉じる</button>
+    </div>
+  </div>
+</div>
+
+<!-- ゲームオーバー・クリア画面オーバーレイ -->
+<div id="gameOverlay" class="overlay">
+  <div class="card" role="dialog" aria-modal="true">
+    <h3 id="ovTitle">結果</h3>
+    <p id="ovMsg"></p>
+    <div class="scores">ベスト: <span id="best1">-</span><span id="best2">-</span><span id="best3">-</span></div>
+    <div class="row" style="margin-top:10px">
+      <button onclick="restart()">リトライ</button>
+      <button onclick="backToStart()">諦める</button>
+      <button onclick="shareResult()">結果をXでシェア</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ブラウザバック管理システム
+var BROWSER_BACK = {
+  currentScreen: 'start', // start, game, pokedex, mypage, titlelist, iconselect
+  initialized: false,
+  
+  init: function() {
+    if (this.initialized) return;
+    this.initialized = true;
+    
+    // 初期状態をpushState
+    history.replaceState({ screen: 'start' }, '', '');
+    
+    // popstateイベントリスナー
+    window.addEventListener('popstate', this.handlePopState.bind(this));
+  },
+  
+  pushState: function(screen) {
+    this.currentScreen = screen;
+    history.pushState({ screen: screen }, '', '');
+  },
+  
+  handlePopState: function(event) {
+    var targetScreen = event.state ? event.state.screen : 'start';
+    
+    // 現在の画面から適切な戻り先に移動
+    switch (this.currentScreen) {
+      case 'game':
+      case 'pokedex':
+      case 'mypage':
+        this.goToStart();
+        break;
+      case 'titlelist':
+      case 'iconselect':
+        this.goToMyPage();
+        break;
+      default:
+        this.goToStart();
+        break;
+    }
+  },
+  
+  goToStart: function() {
+    // ゲーム画面を閉じる
+    if (gameStarted) {
+      gameStarted = false;
+      var gameArea = document.getElementById('gameArea');
+      var startScreen = document.getElementById('startScreen');
+      if (gameArea) gameArea.classList.remove('active');
+      if (startScreen) startScreen.style.display = 'block';
+    }
+    
+    // オーバーレイを閉じる
+    this.closeAllOverlays();
+    
+    this.currentScreen = 'start';
+  },
+  
+  goToMyPage: function() {
+    // 動的オーバーレイを閉じる
+    this.closeDynamicOverlays();
+    
+    // マイページを表示
+    this.currentScreen = 'mypage';
+    showMyPage();
+  },
+  
+  closeAllOverlays: function() {
+    // 図鑑オーバーレイ
+    var pokedexScreen = document.getElementById('pokedexScreen');
+    if (pokedexScreen) pokedexScreen.style.display = 'none';
+    
+    // ゲームオーバーオーバーレイ
+    var gameOverlay = document.getElementById('gameOverlay');
+    if (gameOverlay) gameOverlay.style.display = 'none';
+    
+    // 動的オーバーレイ
+    this.closeDynamicOverlays();
+  },
+  
+  closeDynamicOverlays: function() {
+    var dynamicOverlays = document.querySelectorAll('.overlay:not(#pokedexScreen):not(#gameOverlay)');
+    dynamicOverlays.forEach(function(overlay) { overlay.remove(); });
+  }
+};
 
 // グローバル変数
 var currentStage = 0;
@@ -53,32 +363,201 @@ var STAGES = [
   { name: '冬のケツ', icon: '❄️', range: [19, 24], season: 'winter' }
 ];
 
-// 画像
+// 画像管理システム（修正版）
+var IMAGE_MANAGER = {
+  images: {},
+  stageImages: {},
+  currentStage: -1,
+  loadedStages: new Set(),
+  globalImageStatus: false,
+  
+  // 全ステージの画像を一度に読み込む
+  loadAllStageImages: function() {
+    console.log('全ステージ画像読み込み開始');
+    for (var i = 0; i < STAGES.length; i++) {
+      this.loadStageImages(i);
+    }
+  },
+  
+  loadStageImages: function(stageIndex) {
+    console.log('画像読み込み開始: ステージ', stageIndex);
+    var stage = STAGES[stageIndex];
+    var stageKey = 'stage_' + stageIndex;
+    
+    if (this.loadedStages.has(stageIndex)) {
+      this.currentStage = stageIndex;
+      this.updateGlobalStatus();
+      return Promise.resolve();
+    }
+    
+    this.currentStage = stageIndex;
+    this.stageImages[stageKey] = [];
+    
+    var promises = [];
+    
+    for (var i = 0; i < TYPES; i++) {
+      var imageNumber = stage.range[0] + i;
+      var imagePath = 'assets/ham_' + String(imageNumber).padStart(2, '0') + '.png';
+      
+      var promise = new Promise((function(imgIndex, imageSrc) {
+        return function(resolve, reject) {
+          var img = new Image();
+          img.onload = function() {
+            IMAGE_MANAGER.stageImages[stageKey][imgIndex] = img;
+            IMAGE_MANAGER.globalImageStatus = true;
+            resolve(img);
+          };
+          img.onerror = function() {
+            IMAGE_MANAGER.stageImages[stageKey][imgIndex] = null;
+            resolve(null);
+          };
+          img.src = imageSrc;
+        };
+      })(i, imagePath));
+      
+      promises.push(promise);
+    }
+    
+    return Promise.all(promises).then(() => {
+      this.loadedStages.add(stageIndex);
+      this.updateGlobalStatus();
+    });
+  },
+  
+  updateGlobalStatus: function() {
+    useImages = this.globalImageStatus;
+    hamImages = this.getCurrentStageImages();
+  },
+  
+  getCurrentStageImages: function() {
+    var stageKey = 'stage_' + this.currentStage;
+    return this.stageImages[stageKey] || [];
+  },
+  
+  // 指定されたIDの画像を取得（すべてのステージから）
+  getImageById: function(id) {
+    var stageIndex = Math.floor((id - 1) / 6);
+    var typeIndex = (id - 1) % 6;
+    var stageKey = 'stage_' + stageIndex;
+    
+    if (this.stageImages[stageKey] && this.stageImages[stageKey][typeIndex]) {
+      var img = this.stageImages[stageKey][typeIndex];
+      if (img && img.complete && img.naturalWidth > 0) {
+        return img;
+      }
+    }
+    return null;
+  },
+  
+  getSafeImage: function(typeIndex) {
+    var currentImages = this.getCurrentStageImages();
+    if (!currentImages || currentImages.length <= typeIndex) {
+      return null;
+    }
+    var img = currentImages[typeIndex];
+    if (img && img.complete && img.naturalWidth > 0) {
+      return img;
+    }
+    return null;
+  },
+  
+  isImageAvailable: function(typeIndex) {
+    return this.getSafeImage(typeIndex) !== null;
+  }
+};
+
 var hamImages = [];
 var useImages = false;
-var loadedImages = 0;
 
-// 称号システム
+// 称号・図鑑データ
 var TITLE_DATA = {
   1: { title: "はむケツビギナー", condition_type: "default", condition_value: 0, description: "ゲームを始めた証", secret: false },
-  2: { title: "スコア達人", condition_type: "score_over", condition_value: 5000, description: "5000点を超える", secret: false },
-  3: { title: "スコアマスター", condition_type: "score_over", condition_value: 10000, description: "10000点を超える", secret: false },
-  4: { title: "スコアキング", condition_type: "score_over", condition_value: 15000, description: "15000点を超える", secret: false },
-  5: { title: "スコアレジェンド", condition_type: "score_over", condition_value: 20000, description: "20000点を超える", secret: false },
-  6: { title: "チェインマスター", condition_type: "chain", condition_value: 5, description: "5チェインを達成", secret: false },
-  7: { title: "図鑑コレクター", condition_type: "pokedex", condition_value: 5, description: "5体のはむケツを発見", secret: false },
-  8: { title: "図鑑マスター", condition_type: "pokedex_complete", condition_value: 24, description: "全24体のはむケツを発見", secret: false },
-  9: { title: "ゲーマー", condition_type: "games_played", condition_value: 10, description: "10回ゲームをプレイ", secret: false },
-  10: { title: "はむケツハンター", condition_type: "cleared_blocks", condition_value: 500, description: "500個のはむケツを消去", secret: false },
-  11: { title: "タイムマスター", condition_type: "time_mode_clear", condition_value: 1, description: "制限時間モードをクリア", secret: false },
-  // はむケツラバー称号（自動生成）
-  101: { title: "オレケツラバー", condition_type: "pokedex_unlock", condition_value: 1, description: "オレケツを発見した証", secret: false },
-  102: { title: "バインバインラバー", condition_type: "pokedex_unlock", condition_value: 2, description: "バインバインを発見した証", secret: false },
-  103: { title: "黄金比ケツラバー", condition_type: "pokedex_unlock", condition_value: 3, description: "黄金比ケツを発見した証", secret: false },
-  104: { title: "ふらケツラバー", condition_type: "pokedex_unlock", condition_value: 4, description: "ふらケツを発見した証", secret: false },
-  105: { title: "デリシャスケツラバー", condition_type: "pokedex_unlock", condition_value: 5, description: "デリシャスケツを発見した証", secret: false },
-  106: { title: "やばケツラバー", condition_type: "pokedex_unlock", condition_value: 6, description: "やばケツを発見した証", secret: false },
-  107: { title: "ぱんケツラバー", condition_type: "pokedex_unlock", condition_value: 7, description: "ぱんケツを発見した証", secret: false }
+  2: { title: "はむケツデビュー", condition_type: "score_over", condition_value: 1000, description: "スコア1000点を達成せよ", secret: false },
+  3: { title: "はむケツ職人", condition_type: "score_over", condition_value: 5000, description: "スコア5000点を達成せよ", secret: false },
+  4: { title: "はむケツの匠", condition_type: "score_over", condition_value: 10000, description: "スコア10000点を達成せよ", secret: false },
+  5: { title: "はむケツレジェンド", condition_type: "score_over", condition_value: 15000, description: "スコア15000点を達成せよ", secret: false },
+  6: { title: "はむケツを極めし者", condition_type: "score_over", condition_value: 20000, description: "スコア20000点を達成せよ", secret: false },
+  7: { title: "はむケツ流星群", condition_type: "chain", condition_value: 1, description: "1連鎖を達成せよ", secret: false },
+  8: { title: "はむケツ隕石落とし", condition_type: "chain", condition_value: 3, description: "3連鎖を達成せよ", secret: false },
+  9: { title: "はむケツスターレイン", condition_type: "chain", condition_value: 5, description: "5連鎖を達成せよ", secret: false },
+  10: { title: "はむケツメテオ", condition_type: "chain", condition_value: 7, description: "7連鎖を達成せよ", secret: false },
+  11: { title: "はむケツギャラクシー", condition_type: "chain", condition_value: 10, description: "10連鎖を達成せよ", secret: false },
+  12: { title: "はむケツコスモ", condition_type: "chain", condition_value: 15, description: "15連鎖を達成せよ", secret: false },
+  13: { title: "はむケツユニバース", condition_type: "chain", condition_value: 20, description: "20連鎖を達成せよ", secret: false },
+  14: { title: "はむケツライト勢", condition_type: "pokedex", condition_value: 5, description: "5体のはむケツを発見（図鑑に登録）", secret: false },
+  15: { title: "はむケツオタク", condition_type: "pokedex", condition_value: 10, description: "10体のはむケツを発見（図鑑に登録）", secret: false },
+  16: { title: "はむケツニスト", condition_type: "pokedex", condition_value: 15, description: "15体のはむケツを発見（図鑑に登録）", secret: false },
+  17: { title: "はむケツマイスター", condition_type: "pokedex", condition_value: 20, description: "20体のはむケツを発見（図鑑に登録）", secret: false },
+  18: { title: "はむケツコレクター", condition_type: "pokedex_complete", condition_value: 24, description: "はむケツ図鑑コンプリート", secret: false },
+  19: { title: "はむケツ見習い", condition_type: "games_played", condition_value: 5, description: "ゲームを5回プレイ", secret: false },
+  20: { title: "はむケツアマチュア", condition_type: "games_played", condition_value: 10, description: "ゲームを10回プレイ", secret: false },
+  21: { title: "はむケツマニア", condition_type: "games_played", condition_value: 30, description: "ゲームを30回プレイ", secret: false },
+  22: { title: "はむケツの申し子", condition_type: "games_played", condition_value: 60, description: "ゲームを60回プレイ", secret: false },
+  23: { title: "はむケツ中毒", condition_type: "games_played", condition_value: 100, description: "ゲームを100回プレイ", secret: false },
+  24: { title: "はむケツ廃人", condition_type: "games_played", condition_value: 300, description: "ゲームを300回プレイ", secret: false },
+  25: { title: "はむケツ界の住人", condition_type: "games_played", condition_value: 500, description: "ゲームを500回プレイ", secret: false },
+  26: { title: "はむケツブレイカー", condition_type: "cleared_blocks", condition_value: 200, description: "200ケツ消去を達成せよ", secret: false },
+  27: { title: "はむケツハンター", condition_type: "cleared_blocks", condition_value: 500, description: "500ケツ消去を達成せよ", secret: false },
+  28: { title: "はむケツデストロイヤー", condition_type: "cleared_blocks", condition_value: 1000, description: "1000ケツ消去を達成せよ", secret: false },
+  29: { title: "はむケツ無双", condition_type: "cleared_blocks", condition_value: 2000, description: "2000ケツ消去を達成せよ", secret: false },
+  30: { title: "はむケツクラッシャー", condition_type: "cleared_blocks", condition_value: 3000, description: "3000ケツ消去を達成せよ", secret: false },
+  31: { title: "はむケツビッグバン", condition_type: "cleared_blocks", condition_value: 5000, description: "5000ケツ消去を達成せよ", secret: false },
+  32: { title: "はむケツ修行中", condition_type: "time_mode_play", condition_value: 1, description: "制限時間モードで1回プレイ", secret: false },
+  33: { title: "時を駆けるはむケツ", condition_type: "time_mode_play", condition_value: 5, description: "制限時間モードで5回プレイ", secret: false },
+  34: { title: "はむケツの化身", condition_type: "time_mode_play", condition_value: 10, description: "制限時間モードで10回プレイ", secret: false },
+  35: { title: "はむケツフラッシュ", condition_type: "fast_clear_60", condition_value: 60, description: "60秒以内でクリア", secret: false },
+  // ○○ラバー称号（各はむケツ発見時に取得）
+  101: { title: "オレケツラバー", condition_type: "pokedex_unlock", condition_value: 1, description: "オレケツを図鑑に登録した証", secret: false },
+  102: { title: "パインパインラバー", condition_type: "pokedex_unlock", condition_value: 2, description: "パインパインを図鑑に登録した証", secret: false },
+  103: { title: "黄金比ケツラバー", condition_type: "pokedex_unlock", condition_value: 3, description: "黄金比ケツを図鑑に登録した証", secret: false },
+  104: { title: "ふらケツラバー", condition_type: "pokedex_unlock", condition_value: 4, description: "ふらケツを図鑑に登録した証", secret: false },
+  105: { title: "デリシャスケツラバー", condition_type: "pokedex_unlock", condition_value: 5, description: "デリシャスケツを図鑑に登録した証", secret: false },
+  106: { title: "やばケツラバー", condition_type: "pokedex_unlock", condition_value: 6, description: "やばケツを図鑑に登録した証", secret: false },
+  107: { title: "ぱんケツラバー", condition_type: "pokedex_unlock", condition_value: 7, description: "ぱんケツを図鑑に登録した証", secret: false },
+  108: { title: "夏の太陽ケツラバー", condition_type: "pokedex_unlock", condition_value: 8, description: "夏の太陽ケツを図鑑に登録した証", secret: false },
+  109: { title: "花火ケツラバー", condition_type: "pokedex_unlock", condition_value: 9, description: "花火ケツを図鑑に登録した証", secret: false },
+  110: { title: "プールケツラバー", condition_type: "pokedex_unlock", condition_value: 10, description: "プールケツを図鑑に登録した証", secret: false },
+  111: { title: "ひまわりケツラバー", condition_type: "pokedex_unlock", condition_value: 11, description: "ひまわりケツを図鑑に登録した証", secret: false },
+  112: { title: "かき氷ケツラバー", condition_type: "pokedex_unlock", condition_value: 12, description: "かき氷ケツを図鑑に登録した証", secret: false },
+  113: { title: "紅葉ケツラバー", condition_type: "pokedex_unlock", condition_value: 13, description: "紅葉ケツを図鑑に登録した証", secret: false },
+  114: { title: "栗拾いケツラバー", condition_type: "pokedex_unlock", condition_value: 14, description: "栗拾いケツを図鑑に登録した証", secret: false },
+  115: { title: "お月見ケツラバー", condition_type: "pokedex_unlock", condition_value: 15, description: "お月見ケツを図鑑に登録した証", secret: false },
+  116: { title: "コスモスケツラバー", condition_type: "pokedex_unlock", condition_value: 16, description: "コスモスケツを図鑑に登録した証", secret: false },
+  117: { title: "読書ケツラバー", condition_type: "pokedex_unlock", condition_value: 17, description: "読書ケツを図鑑に登録した証", secret: false },
+  118: { title: "芸術ケツラバー", condition_type: "pokedex_unlock", condition_value: 18, description: "芸術ケツを図鑑に登録した証", secret: false },
+  119: { title: "雪だるまケツラバー", condition_type: "pokedex_unlock", condition_value: 19, description: "雪だるまケツを図鑑に登録した証", secret: false },
+  120: { title: "クリスマスケツラバー", condition_type: "pokedex_unlock", condition_value: 20, description: "クリスマスケツを図鑑に登録した証", secret: false },
+  121: { title: "お正月ケツラバー", condition_type: "pokedex_unlock", condition_value: 21, description: "お正月ケツを図鑑に登録した証", secret: false },
+  122: { title: "温泉ケツラバー", condition_type: "pokedex_unlock", condition_value: 22, description: "温泉ケツを図鑑に登録した証", secret: false },
+  123: { title: "こたつケツラバー", condition_type: "pokedex_unlock", condition_value: 23, description: "こたつケツを図鑑に登録した証", secret: false },
+  124: { title: "雪景色ケツラバー", condition_type: "pokedex_unlock", condition_value: 24, description: "雪景色ケツを図鑑に登録した証", secret: false }
+};
+
+var POKEDEX_DATA = {
+  1: { name: "オレケツ", owner: "カフェオレ", youtubeUrl: "https://youtu.be/ryNzm7qFVzc?si=IC1J5szhLJk3oyu9", description: "カフェオレの美味しそうなケツ" },
+  2: { name: "バインバイン", owner: "かぬれ", youtubeUrl: "https://youtu.be/uWz_CqxCvjY?si=Cv-N3GAoI6lGIq8l", description: "パインパインと弾むケツ" },
+  3: { name: "黄金比ケツ", owner: "こった", youtubeUrl: "https://youtu.be/I6K_khVgrw0?si=b8Hgg4Ntkb0O_A8-", description: "完璧な黄金比で作られたケツ" },
+  4: { name: "ふらケツ", owner: "フラン", youtubeUrl: "https://youtu.be/sljohJszRQY?si=ERUAGUqYOaRF7uMc", description: "ふらふらと魅力的なケツ" },
+  5: { name: "デリシャスケツ", owner: "すぷもーね", youtubeUrl: "https://youtu.be/cjBBnWUbSFA?si=5cs98umvW9AY2LXI", description: "美味しそうなデリシャスケツ" },
+  6: { name: "やばケツ", owner: "アマレッティ", youtubeUrl: "https://youtu.be/gX3N5M8Am9Y?si=E1ZusoKkKbtr5lzh", description: "やばいくらい素晴らしいケツ" },
+  7: { name: "ぱんケツ", owner: "ぱんな", youtubeUrl: "https://youtube.com/shorts/hGF6ZgvpJOU?si=T2up9cTIYPmdrNcg", description: "ふわふわパンのようなケツ" },
+  8: { name: "しらたまケツ", owner: "しゅくれ", youtubeUrl: "https://www.youtube.com/playlist?list=PLpF705pFAL33lcPjtwFPaEtMrSzNEUh0o", description: "白玉のようにふんわりしたケツ" },
+  9: { name: "ころケツ", owner: "ころん", youtubeUrl: "", description: "ころころと可愛いケツ" },
+  10: { name: "ソイけつ", owner: "ソイラテ", youtubeUrl: "https://youtu.be/LYIQSYtYdUE", description: "ソイラテのような優しいケツ" },
+  11: { name: "フィナけつ", owner: "フィナンシェ", youtubeUrl: "https://youtu.be/ZNxXAzQSnQU?si=pcM2s7OSoMcSIE59", description: "フィナンシェのように上品なケツ" },
+  12: { name: "かるケツ", owner: "かるめら", youtubeUrl: "https://www.youtube.com/watch?v=qPglcK9qugU", description: "軽やかで甘いケツ" },
+  13: { name: "ぽんケツ", owner: "ふぉんでゅ", youtubeUrl: "https://youtu.be/uW_A5cBfD5A?si=SiSYQuDWjg-Z7HJv", description: "ふわっとしたケツ" },
+  14: { name: "パナけつ", owner: "コンパナ", youtubeUrl: "https://youtu.be/n4NmDuZn3Vw", description: "コンパナの個性的なケツ" },
+  15: { name: "土管ケツ", owner: "さぶれ", youtubeUrl: "https://youtube.com/shorts/0j8r4IpjwA8", description: "土管のようにしっかりしたケツ" },
+  16: { name: "こんケツ", owner: "アフォガート", youtubeUrl: "https://youtube.com/shorts/SVHDfDEDinY", description: "アフォガートのように濃厚なケツ" },
+  17: { name: "こふケツ", owner: "こふれ", youtubeUrl: "https://www.youtube.com/shorts/tv6u2VqxHjY", description: "こふれのふんわりケツ" },
+  18: { name: "モカけつ", owner: "カフェモカ", youtubeUrl: "https://www.youtube.com/watch?v=h5J52O-He5E", description: "モカの香り豊かなケツ" },
+  19: { name: "ぴちケツ", owner: "ぴち子", youtubeUrl: "https://youtu.be/xCK61SkvB3c?si=cmt9b539WhpYqPKs", description: "ぴちぴちで元気なケツ" },
+  20: { name: "脳筋ケツ", owner: "ロッシェ", youtubeUrl: "https://youtube.com/shorts/_mpykWqD0EQ", description: "筋肉質で力強いケツ" },
+  21: { name: "お月見ケツ", owner: "リコッタ", youtubeUrl: "https://youtu.be/qmGBbk9Pr68", description: "お月見にぴったりな風流なケツ" },
+  22: { name: "ダーけつ", owner: "ダークモカ", youtubeUrl: "https://www.youtube.com/shorts/GWAJRHFY1dg", description: "ダークな魅力のケツ" },
+  23: { name: "シゴデキケツ", owner: "ブラウニー", youtubeUrl: "https://www.youtube.com/watch?v=I6K_khVgrw0", description: "仕事のできるケツ" },
+  24: { name: "ぺこケツ", owner: "ぺこりーの", youtubeUrl: "https://youtube.com/shorts/xPxy5r9RhaY", description: "ぺこりと可愛いケツ" }
 };
 
 var userStats = {
@@ -87,150 +566,56 @@ var userStats = {
   gamesPlayed: 0,
   totalCleared: 0,
   timeModeClears: 0,
-  selectedTitle: 1, // 選択中の称号ID
-  selectedIcon: 0   // 選択中のアイコン（0は初期状態）
+  timeModePlayCount: 0,
+  selectedTitle: 1,
+  selectedIcon: 0,
+  fastClear60: false // 60秒以内クリア達成フラグ
 };
 
-// CSV読み込み関数（称号用）
-function loadTitleDataFromCSV(csvData) {
-  try {
-    var lines = csvData.split('\n');
-    var headers = lines[0].split(',').map(function(h) { return h.trim(); });
-    
-    for (var i = 1; i < lines.length; i++) {
-      if (lines[i].trim() === '') continue;
-      
-      var values = lines[i].split(',').map(function(v) { return v.trim(); });
-      var id = parseInt(values[0]);
-      
-      if (id && id >= 1) {
-        TITLE_DATA[id] = {
-          title: values[1] || '???',
-          condition_type: values[2] || 'default',
-          condition_value: parseInt(values[3]) || 0,
-          description: values[4] || '???を達成せよ',
-          secret: values[5] === 'true'
-        };
-      }
-    }
-    console.log('称号データ更新完了');
-  } catch (error) {
-    console.log('称号CSV読み込みエラー:', error);
-  }
-}
-
-// 図鑑データ（CSV形式対応）
-var POKEDEX_DATA = {
-  1: { name: "オレケツ", owner: "カフェオレ", youtubeUrl: "https://youtu.be/ryNzm7qFVzc?si=IC1J5szhLJk3oyu9", description: "カフェオレの美味しそうなケツ" },
-  2: { name: "バインバイン", owner: "かぬれ", youtubeUrl: "https://youtu.be/uWz_CqxCvjY?si=Cv-N3GAoI6lGIq8l", description: "バインバインと弾むケツ" },
-  3: { name: "黄金比ケツ", owner: "こった", youtubeUrl: "https://youtu.be/I6K_khVgrw0?si=b8Hgg4Ntkb0O_A8-", description: "完璧な黄金比で作られたケツ" },
-  4: { name: "ふらケツ", owner: "フラン", youtubeUrl: "https://youtu.be/sljohJszRQY?si=ERUAGUqYOaRF7uMc", description: "ふらふらと魅力的なケツ" },
-  5: { name: "デリシャスケツ", owner: "すぷもーね", youtubeUrl: "https://youtu.be/cjBBnWUbSFA?si=5cs98umvW9AY2LXI", description: "美味しそうなデリシャスケツ" },
-  6: { name: "やばケツ", owner: "アマレッティ", youtubeUrl: "https://youtu.be/gX3N5M8Am9Y?si=E1ZusoKkKbtr5lzh", description: "やばいくらい素晴らしいケツ" },
-  7: { name: "ぱんケツ", owner: "ぱんな", youtubeUrl: "https://youtube.com/shorts/hGF6ZgvpJOU?si=T2up9cTIYPmdrNcg", description: "ふわふわパンのようなケツ" },
-  8: { name: "夏の太陽ケツ", owner: "なつちゃん", youtubeUrl: "", description: "夏の太陽のように輝くケツ" },
-  9: { name: "花火ケツ", owner: "はなびちゃん", youtubeUrl: "", description: "花火のように美しいケツ" },
-  10: { name: "プールケツ", owner: "すいちゃん", youtubeUrl: "", description: "プールで泳ぐケツ" },
-  11: { name: "ひまわりケツ", owner: "ひまりちゃん", youtubeUrl: "", description: "ひまわりのように元気なケツ" },
-  12: { name: "かき氷ケツ", owner: "かきちゃん", youtubeUrl: "", description: "冷たくて美味しそうなケツ" },
-  13: { name: "紅葉ケツ", owner: "もみじちゃん", youtubeUrl: "", description: "紅葉のように美しいケツ" },
-  14: { name: "栗拾いケツ", owner: "くりちゃん", youtubeUrl: "", description: "栗拾いが楽しいケツ" },
-  15: { name: "お月見ケツ", owner: "つきちゃん", youtubeUrl: "", description: "お月見をするケツ" },
-  16: { name: "コスモスケツ", owner: "こすもちゃん", youtubeUrl: "", description: "コスモスのように可憐なケツ" },
-  17: { name: "読書ケツ", owner: "ほんちゃん", youtubeUrl: "", description: "読書の秋のケツ" },
-  18: { name: "芸術ケツ", owner: "あーとちゃん", youtubeUrl: "", description: "芸術的なケツ" },
-  19: { name: "雪だるまケツ", owner: "ゆきちゃん", youtubeUrl: "", description: "雪だるまのようなケツ" },
-  20: { name: "クリスマスケツ", owner: "くりすちゃん", youtubeUrl: "", description: "クリスマスにぴったりなケツ" },
-  21: { name: "お正月ケツ", owner: "しょうちゃん", youtubeUrl: "", description: "お正月を祝うケツ" },
-  22: { name: "温泉ケツ", owner: "おんせんちゃん", youtubeUrl: "", description: "温泉でほっこりケツ" },
-  23: { name: "こたつケツ", owner: "こたつちゃん", youtubeUrl: "", description: "こたつでまったりケツ" },
-  24: { name: "雪景色ケツ", owner: "せつちゃん", youtubeUrl: "", description: "雪景色のように美しいケツ" }
-};
-
-// CSV読み込み関数
-function loadPokedexDataFromCSV(csvData) {
-  try {
-    // CSV解析（簡易版）
-    var lines = csvData.split('\n');
-    var headers = lines[0].split(',').map(function(h) { return h.trim(); });
-    
-    for (var i = 1; i < lines.length; i++) {
-      if (lines[i].trim() === '') continue;
-      
-      var values = lines[i].split(',').map(function(v) { return v.trim(); });
-      var id = parseInt(values[0]);
-      
-      if (id && id >= 1 && id <= 24) {
-        POKEDEX_DATA[id] = {
-          name: values[1] || '',
-          owner: values[2] || '',
-          youtubeUrl: values[3] || '',
-          description: values[4] || ''
-        };
-      }
-    }
-    console.log('図鑑データ更新完了');
-  } catch (error) {
-    console.log('CSV読み込みエラー:', error);
-  }
-}
-
-// UI関数（最初に定義）
+// UI関数（ブラウザバック機能追加）
 function selectStage(stageIndex) {
   console.log('ステージ選択:', stageIndex);
   var stageBtns = document.querySelectorAll('.stage-btn');
   stageBtns.forEach(function(btn) { btn.classList.remove('active'); });
-  stageBtns[stageIndex].classList.add('active');
+  if (stageBtns[stageIndex]) {
+    stageBtns[stageIndex].classList.add('active');
+  }
   currentStage = stageIndex;
-  
-  var stageNames = ['春のケツ', '夏のケツ', '秋のケツ', '冬のケツ'];
-  console.log(stageNames[stageIndex] + 'が選択されました');
 }
 
 function startGame() {
-  console.log('ゲームスタートボタンがクリックされました！');
+  console.log('ゲームスタート');
   try {
-    console.log('現在のステージ:', currentStage);
-    console.log('STAGES配列:', STAGES);
-    console.log('選択されたステージ:', STAGES[currentStage]);
-    
-    loadStageImages(currentStage);
+    IMAGE_MANAGER.loadStageImages(currentStage);
     gameStarted = true;
     
     var startScreen = document.getElementById('startScreen');
     var gameArea = document.getElementById('gameArea');
     
-    console.log('startScreen要素:', startScreen);
-    console.log('gameArea要素:', gameArea);
-    
     if (startScreen) {
       startScreen.style.display = 'none';
-      console.log('スタート画面を非表示にしました');
-    } else {
-      console.error('startScreen要素が見つかりません');
     }
     
     if (gameArea) {
       gameArea.classList.add('active');
-      console.log('ゲームエリアをアクティブにしました');
-    } else {
-      console.error('gameArea要素が見つかりません');
     }
     
-    console.log('initGame()を呼び出します');
-    initGame();
-    console.log('ゲーム初期化完了');
+    // ブラウザバック機能: ゲーム画面に移動
+    BROWSER_BACK.pushState('game');
     
+    initGame();
   } catch (error) {
-    console.error('startGame()でエラーが発生しました:', error);
+    console.error('ゲーム開始エラー:', error);
     alert('ゲーム開始でエラーが発生しました: ' + error.message);
   }
 }
 
 function showPokedex() {
-  console.log('📖 図鑑を表示');
+  console.log('図鑑を表示');
   
-  // 既に図鑑が開いている場合は閉じる
+  // 全ステージの画像を確実に読み込む
+  IMAGE_MANAGER.loadAllStageImages();
+  
   var existingPokedex = document.getElementById('pokedexScreen');
   if (existingPokedex && existingPokedex.style.display === 'flex') {
     existingPokedex.style.display = 'none';
@@ -245,22 +630,23 @@ function showPokedex() {
     return;
   }
   
+  // ブラウザバック機能: 図鑑画面に移動
+  BROWSER_BACK.pushState('pokedex');
+  
   var pokedex = loadPokedex();
   pokedexGrid.innerHTML = '';
   
   var stageNames = ['春のケツ', '夏のケツ', '秋のケツ', '冬のケツ'];
-  var stageIcons = ['🌸', '🌻', '🍂', '❄️'];
   
   for (var i = 1; i <= 24; i++) {
     var key = 'type_' + i;
     var entry = pokedex[key] || { count: 0, discovered: false };
     var stageIndex = Math.floor((i - 1) / 6);
-    var data = POKEDEX_DATA[i] || { name: '???', owner: '???', youtubeUrl: '', description: '???' };
+    var data = POKEDEX_DATA[i] || { name: '???', owner: '???', description: '???' };
     
     var entryDiv = document.createElement('div');
     entryDiv.className = 'pokedex-entry ' + (entry.discovered ? 'discovered' : 'undiscovered');
     
-    // クリックイベントの安全な設定
     if (entry.discovered) {
       entryDiv.setAttribute('data-id', i);
       entryDiv.style.cursor = 'pointer';
@@ -268,13 +654,9 @@ function showPokedex() {
         var id = parseInt(this.getAttribute('data-id'));
         showPokedexDetail(id);
       };
-    } else {
-      entryDiv.style.cursor = 'default';
-      entryDiv.onclick = null;
     }
     
     if (entry.discovered) {
-      // 安全な画像表示を使用
       var imageDisplay = getSafeImageDisplay(i, 'small');
       
       entryDiv.innerHTML = 
@@ -284,23 +666,21 @@ function showPokedex() {
         '<div style="font-weight: bold; font-size: 10px; margin: 4px 0;">No.' + String(i).padStart(2, '0') + '</div>' +
         '<div style="font-weight: bold; font-size: 12px; margin: 2px 0; color: #ffeb3b;">' + data.name + '</div>' +
         '<div style="font-size: 10px; opacity: 0.8; margin: 2px 0;">' + data.owner + '</div>' +
-        '<div style="font-size: 9px; margin-top: 4px; color: #FFD700; background: rgba(0,0,0,0.7); padding: 2px 6px; border-radius: 8px; font-weight: bold;">消去数: ' + entry.count + '</div>' +
-        '<div style="font-size: 8px; margin-top: 2px; opacity: 0.6;">クリックで詳細</div>';
+        '<div style="font-size: 9px; margin-top: 4px; color: #FFD700; background: rgba(0,0,0,0.7); padding: 2px 6px; border-radius: 8px; font-weight: bold;">消去数: ' + entry.count + '</div>';
     } else {
       entryDiv.innerHTML = 
         '<div style="font-size: 32px; margin-bottom: 8px; height: 40px; display: flex; align-items: center; justify-content: center;">❓</div>' +
         '<div style="font-weight: bold; font-size: 10px; margin: 4px 0;">No.' + String(i).padStart(2, '0') + '</div>' +
         '<div style="font-size: 10px; opacity: 0.8; margin: 2px 0; color: #ffffff;">' + stageNames[stageIndex] + '</div>' +
-        '<div style="font-size: 11px; margin-top: 6px; color: #333; background: rgba(255,255,255,0.95); padding: 4px 8px; border-radius: 10px; font-weight: bold; border: 1px solid rgba(0,0,0,0.1);">' + entry.count + '/30</div>' +
-        '<div style="font-size: 8px; margin-top: 4px; color: #ffffff; background: rgba(0,0,0,0.3); padding: 2px 4px; border-radius: 4px;">30個消去で解放</div>';
+        '<div style="font-size: 11px; margin-top: 6px; color: #333; background: rgba(255,255,255,0.95); padding: 4px 8px; border-radius: 10px; font-weight: bold;">' + entry.count + '/30</div>';
     }
     
     pokedexGrid.appendChild(entryDiv);
   }
   
   pokedexScreen.style.display = 'flex';
-  console.log('✅ 図鑑表示完了');
 }
+
 
 function showPokedexDetail(id) {
   var data = POKEDEX_DATA[id];
@@ -308,14 +688,20 @@ function showPokedexDetail(id) {
   var entry = pokedex['type_' + id] || { count: 0, discovered: false };
   var stageIndex = Math.floor((id - 1) / 6);
   var stageNames = ['春のケツ', '夏のケツ', '秋のケツ', '冬のケツ'];
-  var stageIcons = ['🌸', '🌻', '🍂', '❄️'];
   
   if (!entry.discovered) return;
   
-  // 安全な画像表示を使用
   var imageDisplay = getSafeImageDisplay(id, 'large');
   
-  // 詳細画面を作成
+  // YouTubeボタンのHTMLを作成（これが重要！）
+  var youtubeButtonHTML = '';
+  if (data.youtubeUrl && data.youtubeUrl.trim() !== '') {
+    youtubeButtonHTML = 
+      '<div class="row" style="margin-top: 16px;">' +
+        '<button onclick="window.open(\'' + data.youtubeUrl + '\', \'_blank\')" class="detail-btn" style="background: linear-gradient(135deg, #FF0000, #CC0000); color: white; flex: 1;">🎬 動画を見る</button>' +
+      '</div>';
+  }
+  
   var detailScreen = document.createElement('div');
   detailScreen.className = 'overlay';
   detailScreen.style.display = 'flex';
@@ -327,44 +713,98 @@ function showPokedexDetail(id) {
         '<button onclick="this.parentElement.parentElement.parentElement.remove()" style="position: absolute; top: -10px; right: -10px; background: rgba(255,255,255,0.8); border: none; border-radius: 50%; width: 30px; height: 30px; cursor: pointer; font-size: 16px; color: #333;">×</button>' +
         '<div style="margin: 20px 0; display: flex; justify-content: center;">' + imageDisplay + '</div>' +
         '<h3 style="margin: 16px 0; font-size: 24px;">' + data.name + '</h3>' +
-        '<div style="background: rgba(255,255,255,0.2); border-radius: 12px; padding: 16px; margin: 16px 0; backdrop-filter: blur(10px);">' +
+        '<div style="background: rgba(255,255,255,0.2); border-radius: 12px; padding: 16px; margin: 16px 0;">' +
           '<div style="font-size: 14px; margin: 8px 0;"><strong>📱 持ち主:</strong> ' + data.owner + '</div>' +
           '<div style="font-size: 14px; margin: 8px 0;"><strong>🏷️ 分類:</strong> ' + stageNames[stageIndex] + '</div>' +
-          '<div style="font-size: 14px; margin: 8px 0;"><strong>🔢 図鑑No:</strong> ' + String(id).padStart(3, '0') + '</div>' +
           '<div style="font-size: 14px; margin: 8px 0;"><strong>💥 消去数:</strong> ' + entry.count + '個</div>' +
-          '<div style="font-size: 12px; margin: 12px 0; line-height: 1.4; opacity: 0.9;">' + data.description + '</div>' +
+          '<div style="font-size: 12px; margin: 12px 0; line-height: 1.4;">' + data.description + '</div>' +
         '</div>' +
-        '<div class="row" style="margin-top: 20px; gap: 12px;">' +
-          (data.youtubeUrl && data.youtubeUrl.trim() !== '' ? 
-            '<button onclick="window.open(\'' + data.youtubeUrl + '\', \'_blank\')" style="background: linear-gradient(135deg, #ff0000, #cc0000); flex: 1;">' +
-              '🎬 動画を見る' +
-            '</button>' : 
-            '<button disabled style="background: #666; flex: 1; opacity: 0.5;">' +
-              '🎬 動画準備中' +
-            '</button>') +
-          '<button onclick="sharePokedexEntry(' + id + ')" style="background: linear-gradient(135deg, #1da1f2, #0d8bd9); flex: 1;">' +
-            '📤 シェア' +
-          '</button>' +
-        '</div>' +
+        youtubeButtonHTML +
       '</div>' +
     '</div>';
   
   document.body.appendChild(detailScreen);
 }
 
-function sharePokedexEntry(id) {
-  var data = POKEDEX_DATA[id];
-  var text = encodeURIComponent('はむケツ図鑑に「' + data.name + '」（' + data.owner + '）が登録されました！🐹✨\n\n#はむチラ #はむケツぽよぽよ #はむケツ図鑑');
-  var url = encodeURIComponent('https://hamuchiranagaya.github.io/ketsu-poyo/');
-  window.open('https://twitter.com/intent/tweet?text=' + text + '&url=' + url, '_blank');
+function closePokedex() {
+  var pokedexScreen = document.getElementById('pokedexScreen');
+  if (pokedexScreen) {
+    pokedexScreen.style.display = 'none';
+  }
+  
+  // ブラウザバック機能: スタート画面に戻る
+  BROWSER_BACK.currentScreen = 'start';
 }
 
-function closePokedex() {
-  document.getElementById('pokedexScreen').style.display = 'none';
+function showMyPage() {
+  console.log('マイページを表示');
+  
+  // 全ステージの画像を確実に読み込む
+  IMAGE_MANAGER.loadAllStageImages();
+  
+  // 既存の動的オーバーレイのみを削除（固定の図鑑オーバーレイは残す）
+  var existingDynamicOverlays = document.querySelectorAll('.overlay:not(#pokedexScreen):not(#gameOverlay)');
+  existingDynamicOverlays.forEach(function(overlay) { overlay.remove(); });
+  
+  // ブラウザバック機能: マイページに移動
+  BROWSER_BACK.pushState('mypage');
+  
+  var myPageScreen = document.createElement('div');
+  myPageScreen.className = 'overlay';
+  myPageScreen.style.display = 'flex';
+  myPageScreen.style.zIndex = '1001';
+  
+  var bestScores = loadScores();
+  var selectedIcon = userStats.selectedIcon;
+  var iconDisplay = '';
+  
+  if (selectedIcon > 0 && selectedIcon <= 24) {
+    var pokedex = loadPokedex();
+    var entry = pokedex['type_' + selectedIcon];
+    if (entry && entry.discovered) {
+      iconDisplay = getSafeImageDisplay(selectedIcon, 'profile');
+    }
+  }
+  
+  if (!iconDisplay) {
+    iconDisplay = '<div style="width: 80px; height: 80px; border-radius: 50%; background: linear-gradient(135deg, #ccc, #999); display: flex; align-items: center; justify-content: center; font-size: 14px; color: #666; box-shadow: 0 4px 12px rgba(0,0,0,0.3);">No Image</div>';
+  }
+  
+  myPageScreen.innerHTML = 
+    '<div class="card" style="max-width: 400px; text-align: center;">' +
+      '<button onclick="this.parentElement.parentElement.remove()" style="position: absolute; top: 10px; right: 15px; background: rgba(255,255,255,0.8); border: none; border-radius: 50%; width: 30px; height: 30px; cursor: pointer; font-size: 16px; color: #333;">×</button>' +
+      '<h3 style="margin: 16px 0;">📄 マイページ</h3>' +
+      '<div style="margin: 20px 0; display: flex; justify-content: center; align-items: center;">' + iconDisplay + '</div>' +
+      '<div style="background: rgba(255,255,255,0.2); border-radius: 12px; padding: 12px; margin: 16px 0; backdrop-filter: blur(10px);">' +
+        '<div style="font-size: 18px; font-weight: bold; color: #ffeb3b;">「' + getSelectedTitleName() + '」</div>' +
+      '</div>' +
+      '<div style="background: rgba(255,255,255,0.2); border-radius: 12px; padding: 16px; margin: 16px 0; backdrop-filter: blur(10px);">' +
+        '<div style="font-size: 16px; font-weight: bold; margin-bottom: 8px;">🏆 ベストスコア</div>' +
+        '<div style="font-size: 14px;" id="mypage-best1">1位: ' + (bestScores[0] ? bestScores[0].s : '-') + '</div>' +
+        '<div style="font-size: 14px;" id="mypage-best2">2位: ' + (bestScores[1] ? bestScores[1].s : '-') + '</div>' +
+        '<div style="font-size: 14px;" id="mypage-best3">3位: ' + (bestScores[2] ? bestScores[2].s : '-') + '</div>' +
+      '</div>' +
+      '<div style="background: rgba(255,255,255,0.2); border-radius: 12px; padding: 16px; margin: 16px 0; backdrop-filter: blur(10px);">' +
+        '<div style="font-size: 16px; font-weight: bold; margin-bottom: 8px;">📊 統計情報</div>' +
+        '<div style="font-size: 12px; margin: 4px 0;">🎮 プレイ回数: ' + userStats.gamesPlayed + '</div>' +
+        '<div style="font-size: 12px; margin: 4px 0;">⚡ 最高チェイン: ' + userStats.maxChain + '</div>' +
+        '<div style="font-size: 12px; margin: 4px 0;">💥 消去総数: ' + userStats.totalCleared + '</div>' +
+      '</div>' +
+      '<div class="row" style="margin-top: 20px; gap: 8px;">' +
+        '<button onclick="showTitleList()" style="flex: 1;">🏆 称号変更</button>' +
+        '<button onclick="showIconSelect()" style="flex: 1;">🖼️ アイコン変更</button>' +
+      '</div>' +
+      '<div class="row" style="margin-top: 12px; gap: 8px;">' +
+        '<button onclick="shareMyPage(\'x\')" style="flex: 1; background: linear-gradient(135deg, #000, #333); color: white; border-radius: 20px; padding: 10px 16px; font-size: 14px;">Xでシェア</button>' +
+        '<button onclick="shareMyPage(\'line\')" style="flex: 1; background: linear-gradient(135deg, #00C300, #00B900); color: white; border-radius: 20px; padding: 10px 16px; font-size: 14px;">LINEでシェア</button>' +
+      '</div>' +
+    '</div>';
+  
+  document.body.appendChild(myPageScreen);
 }
 
 function shareToX() {
-  var text = encodeURIComponent('はむケツぽよぽよで遊んでみてね！🐹✨\nはむケツを4個以上つなげて、ぷるぷる消すパズルゲーム\n\n#はむチラ #はむケツぽよぽよ');
+  var text = encodeURIComponent('はむケツぽよぽよで遊んでみてね！🹐✨\nはむケツを4個以上つなげて、ぷるぷる消すパズルゲーム\n\n#はむチラ #はむケツぽよぽよ');
   var url = encodeURIComponent('https://hamuchiranagaya.github.io/ketsu-poyo/');
   window.open('https://twitter.com/intent/tweet?text=' + text + '&url=' + url, '_blank');
 }
@@ -387,11 +827,18 @@ function copyURL() {
   }
 }
 
+function simpleInstall() {
+  alert('📱 ホーム画面への追加方法\n\n《iPhone/iPad (Safari)》\n1. 下部の「共有」ボタン（□↑）をタップ\n2. 「ホーム画面に追加」を選択\n\n《Android (Chrome)》\n1. 右上の「⋮」メニューをタップ\n2. 「ホーム画面に追加」を選択\n\n《PC (Chrome)》\n1. アドレスバー右の「インストール」アイコンをクリック\n2. または右上メニューから「アプリをインストール」');
+}
+
 function backToStart() {
   gameStarted = false;
   document.getElementById('gameArea').classList.remove('active');
   document.getElementById('startScreen').style.display = 'block';
   hideGameOverlay();
+  
+  // ブラウザバック機能: スタート画面に戻る
+  BROWSER_BACK.currentScreen = 'start';
 }
 
 function restart() {
@@ -413,430 +860,9 @@ function restart() {
 }
 
 function shareResult() {
-  var text = encodeURIComponent('はむケツぽよぽよでスコア ' + score + ' 点を記録！🐹✨\nはむケツを4個以上つなげて、ぷるぷる消すパズルゲーム\n\n#はむチラ #はむケツぽよぽよ');
+  var text = encodeURIComponent('はむケツぽよぽよでスコア ' + score + ' 点を記録！🹐✨\nはむケツを4個以上つなげて、ぷるぷる消すパズルゲーム\n\n#はむチラ #はむケツぽよぽよ');
   var url = encodeURIComponent('https://hamuchiranagaya.github.io/ketsu-poyo/');
   window.open('https://twitter.com/intent/tweet?text=' + text + '&url=' + url, '_blank');
-}
-
-// 称号システム関数
-function loadUserStats() {
-  try {
-    if (typeof(Storage) !== "undefined" && localStorage) {
-      var saved = localStorage.getItem('ham_poyo_user_stats');
-      if (saved) {
-        var loaded = JSON.parse(saved);
-        userStats = Object.assign(userStats, loaded);
-        console.log('ユーザー統計を読み込みました:', userStats);
-      }
-    }
-  } catch (error) {
-    console.log('ユーザー統計読み込みエラー:', error);
-  }
-  
-  // デフォルト称号を確実に取得済みにする
-  if (!hasTitleUnlocked(1)) {
-    unlockTitle(1);
-  }
-}
-
-function saveUserStats() {
-  try {
-    if (typeof(Storage) !== "undefined" && localStorage) {
-      localStorage.setItem('ham_poyo_user_stats', JSON.stringify(userStats));
-      console.log('ユーザー統計を保存しました:', userStats);
-    }
-  } catch (error) {
-    console.log('ユーザー統計保存エラー:', error);
-  }
-}
-
-function updateStats(newScore, newChain, blocksCleared, isTimeMode) {
-  console.log('統計更新開始 - スコア:', newScore, 'チェイン:', newChain);
-  
-  // 統計更新
-  if (newScore > userStats.maxScore) {
-    userStats.maxScore = newScore;
-    console.log('最高スコア更新:', newScore);
-  }
-  if (newChain > userStats.maxChain) {
-    userStats.maxChain = newChain;
-    console.log('最高チェイン更新:', newChain);
-  }
-  userStats.gamesPlayed++;
-  userStats.totalCleared += blocksCleared || 0;
-  
-  if (isTimeMode && !gameOver) {
-    userStats.timeModeClears++;
-  }
-  
-  console.log('更新後の統計:', userStats);
-  
-  // 称号チェック
-  checkAndUnlockTitles();
-  saveUserStats();
-}
-
-function checkAndUnlockTitles() {
-  var pokedexStats = getPokedexStats();
-  
-  Object.keys(TITLE_DATA).forEach(function(id) {
-    var titleId = parseInt(id);
-    var titleData = TITLE_DATA[titleId];
-    
-    if (hasTitleUnlocked(titleId)) return;
-    
-    var unlocked = false;
-    
-    switch (titleData.condition_type) {
-      case 'default':
-        unlocked = true;
-        break;
-      case 'score_over':
-        unlocked = userStats.maxScore >= titleData.condition_value;
-        break;
-      case 'chain':
-        unlocked = userStats.maxChain >= titleData.condition_value;
-        break;
-      case 'games_played':
-        unlocked = userStats.gamesPlayed >= titleData.condition_value;
-        break;
-      case 'pokedex':
-        unlocked = pokedexStats.discovered >= titleData.condition_value;
-        break;
-      case 'pokedex_complete':
-        unlocked = pokedexStats.discovered >= 24;
-        break;
-      case 'cleared_blocks':
-        unlocked = userStats.totalCleared >= titleData.condition_value;
-        break;
-      case 'time_mode_clear':
-        unlocked = userStats.timeModeClears >= titleData.condition_value;
-        break;
-      case 'pokedex_unlock':
-        // 特定のはむケツが発見されているかチェック
-        var pokedex = loadPokedex();
-        var entry = pokedex['type_' + titleData.condition_value];
-        unlocked = entry && entry.discovered;
-        break;
-    }
-    
-    if (unlocked) {
-      unlockTitle(titleId);
-    }
-  });
-}
-
-// はむケツラバー称号の自動生成
-function generateRubberTitles() {
-  // 8番以降の未定義はむケツ用の称号を自動生成
-  for (var i = 8; i <= 24; i++) {
-    var titleId = 100 + i;
-    if (!TITLE_DATA[titleId]) {
-      var data = POKEDEX_DATA[i];
-      if (data && data.name && data.name !== '???') {
-        TITLE_DATA[titleId] = {
-          title: data.name + "ラバー",
-          condition_type: "pokedex_unlock",
-          condition_value: i,
-          description: data.name + "を発見した証",
-          secret: false
-        };
-      }
-    }
-  }
-}
-
-function hasTitleUnlocked(titleId) {
-  try {
-    var unlockedTitles = JSON.parse(localStorage.getItem('ham_poyo_unlocked_titles') || '[]');
-    return unlockedTitles.includes(titleId);
-  } catch (error) {
-    return false;
-  }
-}
-
-function unlockTitle(titleId) {
-  try {
-    var unlockedTitles = JSON.parse(localStorage.getItem('ham_poyo_unlocked_titles') || '[]');
-    if (!unlockedTitles.includes(titleId)) {
-      unlockedTitles.push(titleId);
-      localStorage.setItem('ham_poyo_unlocked_titles', JSON.stringify(unlockedTitles));
-      
-      // 称号取得通知
-      var titleData = TITLE_DATA[titleId];
-      if (titleData && titleId !== 1) { // 初期称号以外は通知
-        setTimeout(function() {
-          alert('🏆 新しい称号を獲得しました！\n\n「' + titleData.title + '」\n' + titleData.description);
-        }, 1000);
-      }
-    }
-  } catch (error) {
-    console.log('称号解放エラー:', error);
-  }
-}
-
-function getSelectedTitleName() {
-  var titleData = TITLE_DATA[userStats.selectedTitle];
-  return titleData ? titleData.title : 'はむケツビギナー';
-}
-
-function showMyPage() {
-  console.log('マイページを表示');
-  
-  var myPageScreen = document.createElement('div');
-  myPageScreen.className = 'overlay';
-  myPageScreen.style.display = 'flex';
-  myPageScreen.style.zIndex = '1001';
-  
-  var bestScores = loadScores();
-  var selectedIcon = userStats.selectedIcon;
-  var iconDisplay = '';
-  
-  if (selectedIcon > 0 && selectedIcon <= 24) {
-    var pokedex = loadPokedex();
-    var entry = pokedex['type_' + selectedIcon];
-    if (entry && entry.discovered) {
-      var stageIndex = Math.floor((selectedIcon - 1) / 6);
-      var stageIcons = ['🌸', '🌻', '🍂', '❄️'];
-      if (useImages && hamImages[((selectedIcon-1) % 6)] && hamImages[((selectedIcon-1) % 6)].complete) {
-        iconDisplay = '<img src="' + hamImages[((selectedIcon-1) % 6)].src + '" style="width: 80px; height: 80px; border-radius: 50%; box-shadow: 0 4px 12px rgba(0,0,0,0.3);">';
-      } else {
-        iconDisplay = '<div style="width: 80px; height: 80px; border-radius: 50%; background: linear-gradient(135deg, #4facfe, #00f2fe); display: flex; align-items: center; justify-content: center; font-size: 40px; box-shadow: 0 4px 12px rgba(0,0,0,0.3);">' + stageIcons[stageIndex] + '</div>';
-      }
-    }
-  }
-  
-  if (!iconDisplay) {
-    iconDisplay = '<div style="width: 80px; height: 80px; border-radius: 50%; background: linear-gradient(135deg, #ccc, #999); display: flex; align-items: center; justify-content: center; font-size: 14px; color: #666; box-shadow: 0 4px 12px rgba(0,0,0,0.3);">No Image</div>';
-  }
-  
-  myPageScreen.innerHTML = 
-    '<div class="card" style="max-width: 400px; text-align: center;">' +
-      '<button onclick="this.parentElement.parentElement.remove()" style="position: absolute; top: 10px; right: 15px; background: rgba(255,255,255,0.8); border: none; border-radius: 50%; width: 30px; height: 30px; cursor: pointer; font-size: 16px; color: #333;">×</button>' +
-      '<h3 style="margin: 16px 0;">📄 マイページ</h3>' +
-      '<div style="margin: 20px 0; display: flex; justify-content: center; align-items: center;">' + iconDisplay + '</div>' +
-      '<div style="background: rgba(255,255,255,0.2); border-radius: 12px; padding: 12px; margin: 16px 0;">' +
-        '<div style="font-size: 18px; font-weight: bold; color: #ffeb3b;">「' + getSelectedTitleName() + '」</div>' +
-      '</div>' +
-      '<div style="background: rgba(255,255,255,0.2); border-radius: 12px; padding: 16px; margin: 16px 0;">' +
-        '<div style="font-size: 16px; font-weight: bold; margin-bottom: 8px;">🏆 ベストスコア</div>' +
-        '<div style="font-size: 14px;" id="mypage-best1">1位: ' + (bestScores[0] ? bestScores[0].s : '-') + '</div>' +
-        '<div style="font-size: 14px;" id="mypage-best2">2位: ' + (bestScores[1] ? bestScores[1].s : '-') + '</div>' +
-        '<div style="font-size: 14px;" id="mypage-best3">3位: ' + (bestScores[2] ? bestScores[2].s : '-') + '</div>' +
-      '</div>' +
-      '<div style="background: rgba(255,255,255,0.2); border-radius: 12px; padding: 16px; margin: 16px 0;">' +
-        '<div style="font-size: 16px; font-weight: bold; margin-bottom: 8px;">📊 統計情報</div>' +
-        '<div style="font-size: 12px; margin: 4px 0;">🎮 プレイ回数: ' + userStats.gamesPlayed + '</div>' +
-        '<div style="font-size: 12px; margin: 4px 0;">⚡ 最高チェイン: ' + userStats.maxChain + '</div>' +
-        '<div style="font-size: 12px; margin: 4px 0;">💥 消去総数: ' + userStats.totalCleared + '</div>' +
-      '</div>' +
-      '<div class="row" style="margin-top: 20px; gap: 8px;">' +
-        '<button onclick="showTitleList()" style="flex: 1;">🏆 称号変更</button>' +
-        '<button onclick="showIconSelect()" style="flex: 1;">🖼️ アイコン変更</button>' +
-      '</div>' +
-      '<div class="row" style="margin-top: 12px; gap: 8px;">' +
-        '<button onclick="shareMyPage(\'x\')" style="flex: 1; background: linear-gradient(135deg, #000, #333); color: white; border-radius: 20px; padding: 10px 16px; font-size: 14px;">Xでシェア</button>' +
-        '<button onclick="shareMyPage(\'line\')" style="flex: 1; background: linear-gradient(135deg, #00C300, #00B900); color: white; border-radius: 20px; padding: 10px 16px; font-size: 14px;">LINEでシェア</button>' +
-      '</div>' +
-    '</div>';
-  
-  document.body.appendChild(myPageScreen);
-}
-
-function showTitleList() {
-  // 現在のマイページを閉じる
-  var existingPages = document.querySelectorAll('.overlay');
-  existingPages.forEach(function(page) { page.remove(); });
-  
-  var titleListScreen = document.createElement('div');
-  titleListScreen.className = 'overlay';
-  titleListScreen.style.display = 'flex';
-  titleListScreen.style.zIndex = '1001';
-  
-  var titleListHTML = '';
-  Object.keys(TITLE_DATA).forEach(function(id) {
-    var titleId = parseInt(id);
-    var titleData = TITLE_DATA[titleId];
-    var unlocked = hasTitleUnlocked(titleId);
-    var isSelected = userStats.selectedTitle === titleId;
-    
-    var displayTitle = titleData.title;
-    var displayDesc = titleData.description;
-    
-    if (!unlocked && titleData.secret) {
-      displayTitle = '???';
-      displayDesc = '???を達成せよ';
-    }
-    
-    var progress = '';
-    if (!unlocked) {
-      var current = 0;
-      var pokedexStats = getPokedexStats();
-      
-      switch (titleData.condition_type) {
-        case 'score_over':
-          current = userStats.maxScore;
-          break;
-        case 'chain':
-          current = userStats.maxChain;
-          break;
-        case 'games_played':
-          current = userStats.gamesPlayed;
-          break;
-        case 'pokedex':
-          current = pokedexStats.discovered;
-          break;
-        case 'cleared_blocks':
-          current = userStats.totalCleared;
-          break;
-        case 'time_mode_clear':
-          current = userStats.timeModeClears;
-          break;
-      }
-      progress = ' (' + current + '/' + titleData.condition_value + ')';
-    }
-    
-    titleListHTML += 
-      '<div style="background: ' + (unlocked ? (isSelected ? 'linear-gradient(135deg, #ffeb3b, #ffc107)' : 'rgba(255,255,255,0.2)') : 'rgba(255,255,255,0.1)') + '; border-radius: 8px; padding: 12px; margin: 8px 0; border: 2px solid ' + (isSelected ? '#ffeb3b' : 'transparent') + ';">' +
-        '<div style="display: flex; align-items: center; gap: 8px;">' +
-          '<span style="font-size: 16px;">' + (unlocked ? (isSelected ? '👑' : '✅') : '❓') + '</span>' +
-          '<div style="flex: 1; text-align: left;">' +
-            '<div style="font-weight: bold; font-size: 14px;">' + displayTitle + progress + '</div>' +
-            '<div style="font-size: 12px; opacity: 0.8;">' + displayDesc + '</div>' +
-          '</div>' +
-          (unlocked ? '<button onclick="selectTitle(' + titleId + ')" style="background: linear-gradient(135deg, #4facfe, #00f2fe); border: none; border-radius: 6px; padding: 4px 8px; color: white; font-size: 12px; cursor: pointer;">' + (isSelected ? '装備中' : '装備') + '</button>' : '') +
-        '</div>' +
-      '</div>';
-  });
-  
-  titleListScreen.innerHTML = 
-    '<div class="card" style="max-width: 500px; max-height: 80vh; overflow-y: auto;">' +
-      '<button onclick="this.parentElement.parentElement.remove()" style="position: absolute; top: 10px; right: 15px; background: rgba(255,255,255,0.8); border: none; border-radius: 50%; width: 30px; height: 30px; cursor: pointer; font-size: 16px; color: #333;">×</button>' +
-      '<h3 style="margin: 16px 0;">🏆 称号一覧</h3>' +
-      '<div style="margin: 20px 0;">' + titleListHTML + '</div>' +
-      '<div class="row" style="margin-top: 20px;">' +
-        '<button onclick="this.parentElement.parentElement.parentElement.remove(); showMyPage();" style="background: linear-gradient(135deg, #ff6b6b, #ff8e8e);">戻る</button>' +
-      '</div>' +
-    '</div>';
-  
-  document.body.appendChild(titleListScreen);
-}
-
-function selectTitle(titleId) {
-  userStats.selectedTitle = titleId;
-  saveUserStats();
-  
-  // 称号一覧を再表示
-  showTitleList();
-}
-
-function showIconSelect() {
-  // 現在のマイページを閉じる
-  var existingPages = document.querySelectorAll('.overlay');
-  existingPages.forEach(function(page) { page.remove(); });
-  
-  var iconSelectScreen = document.createElement('div');
-  iconSelectScreen.className = 'overlay';
-  iconSelectScreen.style.display = 'flex';
-  iconSelectScreen.style.zIndex = '1001';
-  
-  var pokedex = loadPokedex();
-  var stageNames = ['春のケツ', '夏のケツ', '秋のケツ', '冬のケツ'];
-  var stageIcons = ['🌸', '🌻', '🍂', '❄️'];
-  
-  var iconListHTML = '';
-  
-  // デフォルトアイコン
-  iconListHTML += 
-    '<div onclick="selectIcon(0)" style="display: inline-block; margin: 8px; cursor: pointer; text-align: center; border: 3px solid ' + (userStats.selectedIcon === 0 ? '#ffeb3b' : 'transparent') + '; border-radius: 12px; padding: 8px;">' +
-      '<div style="width: 60px; height: 60px; border-radius: 50%; background: linear-gradient(135deg, #ccc, #999); display: flex; align-items: center; justify-content: center; font-size: 12px; color: #666; margin: 0 auto 4px auto;">No Image</div>' +
-      '<div style="font-size: 10px;">デフォルト</div>' +
-    '</div>';
-  
-  // 発見済みはむケツ
-  for (var i = 1; i <= 24; i++) {
-    var key = 'type_' + i;
-    var entry = pokedex[key] || { count: 0, discovered: false };
-    
-    if (entry.discovered) {
-      var stageIndex = Math.floor((i - 1) / 6);
-      var data = POKEDEX_DATA[i];
-      var isSelected = userStats.selectedIcon === i;
-      
-      var iconDisplay = '';
-      if (useImages && hamImages[((i-1) % 6)] && hamImages[((i-1) % 6)].complete) {
-        iconDisplay = '<img src="' + hamImages[((i-1) % 6)].src + '" style="width: 60px; height: 60px; border-radius: 50%;">';
-      } else {
-        iconDisplay = '<div style="width: 60px; height: 60px; border-radius: 50%; background: linear-gradient(135deg, #4facfe, #00f2fe); display: flex; align-items: center; justify-content: center; font-size: 30px;">' + stageIcons[stageIndex] + '</div>';
-      }
-      
-      iconListHTML += 
-        '<div onclick="selectIcon(' + i + ')" style="display: inline-block; margin: 8px; cursor: pointer; text-align: center; border: 3px solid ' + (isSelected ? '#ffeb3b' : 'transparent') + '; border-radius: 12px; padding: 8px;">' +
-          iconDisplay +
-          '<div style="font-size: 10px; margin-top: 4px;">' + data.name + '</div>' +
-        '</div>';
-    }
-  }
-  
-  iconSelectScreen.innerHTML = 
-    '<div class="card" style="max-width: 500px; max-height: 80vh; overflow-y: auto;">' +
-      '<button onclick="this.parentElement.parentElement.remove()" style="position: absolute; top: 10px; right: 15px; background: rgba(255,255,255,0.8); border: none; border-radius: 50%; width: 30px; height: 30px; cursor: pointer; font-size: 16px; color: #333;">×</button>' +
-      '<h3 style="margin: 16px 0;">🖼️ アイコン選択</h3>' +
-      '<p style="font-size: 12px; opacity: 0.8;">発見済みのはむケツから選択できます</p>' +
-      '<div style="margin: 20px 0; display: flex; flex-wrap: wrap; justify-content: center;">' + iconListHTML + '</div>' +
-      '<div class="row" style="margin-top: 20px;">' +
-        '<button onclick="this.parentElement.parentElement.parentElement.remove(); showMyPage();" style="background: linear-gradient(135deg, #ff6b6b, #ff8e8e);">戻る</button>' +
-      '</div>' +
-    '</div>';
-  
-  document.body.appendChild(iconSelectScreen);
-}
-
-function selectIcon(iconId) {
-  userStats.selectedIcon = iconId;
-  saveUserStats();
-  
-  // アイコン選択画面を再表示
-  showIconSelect();
-}
-
-// マイページシェア機能
-function shareMyPage(platform) {
-  console.log('📤 マイページシェア:', platform);
-  
-  try {
-    var bestScores = loadScores();
-    var currentTitle = getSelectedTitleName();
-    var bestScore = bestScores[0] ? bestScores[0].s : 0;
-    
-    // シェアテキスト作成
-    var shareText = 
-      '称号「' + currentTitle + '」\n' +
-      'ベストスコア: ' + bestScore + '点\n\n' +
-      'はむケツを集めてぷるぷる消すゲーム🎮\n' +
-      'はむケツぽよぽよ、ぜひ遊んでみてね！\n' +
-      '#ハムスター #はむチラ #はむケツぽよぽよ';
-    
-    var gameUrl = 'https://hamuchiranagaya.github.io/ketsu-poyo/';
-    
-    if (platform === 'x') {
-      // X (Twitter) でシェア
-      var tweetText = encodeURIComponent(shareText);
-      var tweetUrl = encodeURIComponent(gameUrl);
-      var xUrl = 'https://twitter.com/intent/tweet?text=' + tweetText + '&url=' + tweetUrl;
-      window.open(xUrl, '_blank');
-      
-    } else if (platform === 'line') {
-      // LINE でシェア
-      var lineText = encodeURIComponent(shareText + '\n' + gameUrl);
-      var lineUrl = 'https://social-plugins.line.me/lineit/share?url=' + encodeURIComponent(gameUrl) + '&text=' + lineText;
-      window.open(lineUrl, '_blank');
-    }
-    
-  } catch (error) {
-    console.error('❌ シェアエラー:', error);
-    alert('シェアに失敗しました。もう一度お試しください。');
-  }
 }
 
 // 操作関数
@@ -920,105 +946,45 @@ function initGame() {
   PX = Math.floor((W - COLS * TILE) / 2);
   PY = Math.floor((H - ROWS * TILE) / 2);
   
-  hamImages = Array.from({length: TYPES}, function() { return new Image(); });
-  
-  loadStageImages(currentStage);
   fit();
   restart();
   requestAnimationFrame(gameLoop);
 }
 
-// 画像管理の完全修正版（永続化対応）
-var imageLoadStatus = {
-  loaded: false,
-  currentStage: -1,
-  images: [],
-  fallbackMode: false // 画像なしモードフラグ
-};
-
-function loadStageImages(stageIndex) {
-  console.log('🖼️ ステージ ' + STAGES[stageIndex].name + ' の画像読み込み開始');
-  
-  // 既に同じステージの画像が読み込み済みの場合はスキップ
-  if (imageLoadStatus.loaded && imageLoadStatus.currentStage === stageIndex) {
-    console.log('✅ 既に読み込み済み、スキップ');
-    useImages = !imageLoadStatus.fallbackMode;
-    return;
-  }
-  
-  var stage = STAGES[stageIndex];
-  useImages = false;
-  loadedImages = 0;
-  imageLoadStatus.loaded = false;
-  imageLoadStatus.currentStage = stageIndex;
-  imageLoadStatus.fallbackMode = true; // デフォルトでフォールバックモード
-  
-  // 新しい画像配列を作成
-  imageLoadStatus.images = Array.from({length: TYPES}, function() { return new Image(); });
-  hamImages = imageLoadStatus.images;
-
-  var successCount = 0;
-  var totalImages = TYPES;
-
-  hamImages.forEach(function(img, i) {
-    var imageNumber = stage.range[0] + i;
-    var imagePath = 'assets/ham_' + String(imageNumber).padStart(2, '0') + '.png';
-    
-    // 読み込み完了（成功）
-    img.onload = function() {
-      successCount++;
-      console.log('✅ 画像読み込み成功 ' + successCount + '/' + totalImages + ': ' + imagePath);
-      
-      if (successCount >= 1) {
-        // 1つでも読み込めれば画像モード有効
-        imageLoadStatus.fallbackMode = false;
-        useImages = true;
-      }
-      
-      if (successCount + (totalImages - successCount) === totalImages) {
-        imageLoadStatus.loaded = true;
-        console.log('🎉 画像読み込み完了: ' + successCount + '個成功');
-      }
-    };
-    
-    // 読み込み失敗
-    img.onerror = function() {
-      console.log('❌ 画像読み込み失敗: ' + imagePath);
-      hamImages[i] = null;
-      
-      if (successCount + (totalImages - successCount) === totalImages) {
-        imageLoadStatus.loaded = true;
-        console.log('📝 画像読み込み処理完了（一部失敗含む）');
-      }
-    };
-    
-    // 画像読み込み開始
-    img.src = imagePath;
-  });
-  
-  // 2秒でタイムアウト（より早く切り替え）
-  setTimeout(function() {
-    if (!imageLoadStatus.loaded) {
-      console.log('⏰ 画像読み込みタイムアウト、アイコン表示に切り替え');
-      imageLoadStatus.loaded = true;
-      imageLoadStatus.fallbackMode = true;
-      useImages = false;
-    }
-  }, 2000);
-}
-
-// 安全な画像表示関数
 function getSafeImageDisplay(id, size) {
   var stageIndex = Math.floor((id - 1) / 6);
   var stageIcons = ['🌸', '🌻', '🍂', '❄️'];
-  var imageTypeIndex = ((id - 1) % 6);
   
-  // 常にアイコン表示（安定性重視）
+  // 修正: 直接IDを使って画像を取得
+  var img = IMAGE_MANAGER.getImageById(id);
+  
+  if (img) {
+    if (size === 'large') {
+      return '<img src="' + img.src + '" style="width: 80px; height: 80px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.3);">';
+    } else if (size === 'profile') {
+      return '<img src="' + img.src + '" style="width: 80px; height: 80px; border-radius: 50%; box-shadow: 0 4px 12px rgba(0,0,0,0.3);">';
+    } else if (size === 'icon') {
+      return '<div style="width: 60px; height: 60px; border-radius: 50%; overflow: hidden; margin: 0 auto 4px auto;"><img src="' + img.src + '" style="width: 100%; height: 100%; object-fit: cover;"></div>';
+    } else {
+      return '<img src="' + img.src + '" style="width: 32px; height: 32px; border-radius: 4px;">';
+    }
+  }
+  
+  // フォールバック: アイコン表示
   if (size === 'large') {
     return '<div style="width: 80px; height: 80px; border-radius: 12px; background: linear-gradient(135deg, #4facfe, #00f2fe); display: flex; align-items: center; justify-content: center; font-size: 40px; box-shadow: 0 4px 12px rgba(0,0,0,0.3); color: white;">' + stageIcons[stageIndex] + '</div>';
+  } else if (size === 'profile') {
+    return '<div style="width: 80px; height: 80px; border-radius: 50%; background: linear-gradient(135deg, #4facfe, #00f2fe); display: flex; align-items: center; justify-content: center; font-size: 40px; box-shadow: 0 4px 12px rgba(0,0,0,0.3); color: white;">' + stageIcons[stageIndex] + '</div>';
+  } else if (size === 'icon') {
+    return '<div style="width: 60px; height: 60px; border-radius: 50%; background: linear-gradient(135deg, #4facfe, #00f2fe); display: flex; align-items: center; justify-content: center; font-size: 30px; margin: 0 auto 4px auto; color: white;">' + stageIcons[stageIndex] + '</div>';
   } else {
     return '<div style="font-size: 32px;">' + stageIcons[stageIndex] + '</div>';
   }
+}
+
+function getSelectedTitleName() {
+  var titleData = TITLE_DATA[userStats.selectedTitle];
+  return titleData ? titleData.title : 'はむケツビギナー';
 }
 
 function fit() {
@@ -1026,18 +992,13 @@ function fit() {
   
   var availableWidth = window.innerWidth - 16;
   var availableHeight = window.innerHeight - 280;
-  
   var maxWidth = 500;
   var maxHeight = 800;
-  
   var scaleByWidth = Math.min(availableWidth, maxWidth) / W;
   var scaleByHeight = Math.min(availableHeight, maxHeight) / H;
   var scale = Math.min(scaleByWidth, scaleByHeight);
-  
   var isSmallScreen = window.innerWidth <= 768;
-  var finalScale = isSmallScreen ? 
-    Math.max(scale, availableWidth / W * 0.9) : 
-    Math.max(scale, 0.8);
+  var finalScale = isSmallScreen ? Math.max(scale, availableWidth / W * 0.9) : Math.max(scale, 0.8);
   
   canvas.style.width = (W * finalScale) + 'px';
   canvas.style.height = (H * finalScale) + 'px';
@@ -1111,8 +1072,6 @@ function getRotatedBlocks(rot, type0, type1) {
 }
 
 function lockPiece() {
-  console.log('ピース固定開始');
-  
   for (var i = 0; i < falling.blocks.length; i++) {
     var block = falling.blocks[i];
     var x = falling.cx + block.dx;
@@ -1128,7 +1087,6 @@ function lockPiece() {
       mark: false, 
       seed: Math.random() * 1000
     };
-    console.log('ブロック配置: (' + y + ',' + x + ') タイプ' + block.type);
   }
   
   falling = null;
@@ -1170,8 +1128,6 @@ function processResolving() {
 }
 
 function scanForMatches() {
-  console.log('🔍 消去スキャン開始 - 現在のチェイン:', chain);
-  
   for (var r = 0; r < ROWS; r++) {
     for (var c = 0; c < COLS; c++) {
       grid[r][c].mark = false;
@@ -1181,7 +1137,6 @@ function scanForMatches() {
   var visited = Array.from({ length: ROWS }, function() { return Array(COLS).fill(false); });
   var directions = [[1, 0], [-1, 0], [0, 1], [0, -1]];
   var totalCleared = 0;
-  var matchGroups = [];
 
   function floodFill(startR, startC) {
     var type = grid[startR][startC].type;
@@ -1211,21 +1166,13 @@ function scanForMatches() {
     return cells;
   }
 
-  // 消去対象を検索
   for (var r = 0; r < ROWS; r++) {
     for (var c = 0; c < COLS; c++) {
       if (!visited[r][c] && grid[r][c].type) {
         var cells = floodFill(r, c);
         if (cells.length >= 4) {
-          console.log('💥 消去対象発見: ' + cells.length + '個, タイプ' + grid[r][c].type);
           totalCleared += cells.length;
-          matchGroups.push({
-            type: grid[r][c].type,
-            count: cells.length,
-            cells: cells
-          });
           
-          // セルにマークを付ける
           cells.forEach(function(cell) {
             var rr = cell[0];
             var cc = cell[1];
@@ -1238,27 +1185,18 @@ function scanForMatches() {
   }
 
   if (totalCleared > 0) {
-    // チェインカウントを増加
     chain++;
-    console.log('⚡ チェイン' + chain + '発生！ 合計' + totalCleared + '個消去');
-    
-    // スコア計算（修正版）
-    var basePoints = totalCleared * 10; // 基本10点/ブロック
-    var chainBonus = chain > 1 ? Math.pow(2, chain - 1) : 1; // チェインボーナス（2の累乗）
+    var basePoints = totalCleared * 10;
+    var chainBonus = chain > 1 ? Math.pow(2, chain - 1) : 1;
     var addedPoints = Math.floor(basePoints * chainBonus);
     
     score += addedPoints;
-    console.log('📊 スコア計算: ' + totalCleared + '個 × 10 × ' + chainBonus + ' = +' + addedPoints + '点 (合計:' + score + ')');
     
     phase = 1;
     phaseTimer = 0;
     updateHUD();
   } else {
-    console.log('❌ 消去対象なし - チェインリセット');
-    
-    // チェインリセット（重要！）
     if (chain > 0) {
-      console.log('🔄 チェイン終了: ' + chain + ' → 0');
       chain = 0;
       updateHUD();
     }
@@ -1267,7 +1205,6 @@ function scanForMatches() {
     falling = nextPair;
     nextPair = newPair();
     
-    // 全ブロッククリアチェック
     var hasBlocks = false;
     for (var r = 0; r < ROWS; r++) {
       for (var c = 0; c < COLS; c++) {
@@ -1305,19 +1242,14 @@ function clearMarkedBlocks() {
     }
   }
   
-  // 図鑑に追加
   Object.keys(clearedTypes).forEach(function(type) {
     if (type > 0) {
       addToPokedex(parseInt(type), clearedTypes[type]);
     }
   });
-  
-  console.log('🗑️ ブロック消去完了: ' + clearedCount + '個');
 }
 
 function dropBlocks() {
-  console.log('落下処理開始');
-  
   for (var c = 0; c < COLS; c++) {
     var writeRow = ROWS - 1;
     
@@ -1330,14 +1262,11 @@ function dropBlocks() {
             seed: Math.random() * 1000
           };
           grid[r][c] = empty();
-          console.log('ブロック移動: (' + r + ',' + c + ') → (' + writeRow + ',' + c + ')');
         }
         writeRow--;
       }
     }
   }
-  
-  console.log('落下処理完了');
 }
 
 function spawnBurst(x, y, type) {
@@ -1389,31 +1318,22 @@ function drawBlob(x, y, size, type, alpha, shakeX, shakeY, scale) {
     ctx.translate(-cx, -cy);
   }
   
-  // 画像表示の判定を厳密にする
-  var imageIndex = type - 1; // 1-6 → 0-5
-  var canUseImage = useImages && 
-                   hamImages[imageIndex] && 
-                   hamImages[imageIndex].complete && 
-                   hamImages[imageIndex].naturalWidth > 0 &&
-                   hamImages[imageIndex].naturalHeight > 0;
+  var imageIndex = type - 1;
+  var img = IMAGE_MANAGER.getSafeImage(imageIndex);
   
-  if (canUseImage) {
+  if (img) {
     try {
-      ctx.drawImage(hamImages[imageIndex], x + shakeX, y + shakeY, size, size);
+      ctx.drawImage(img, x + shakeX, y + shakeY, size, size);
     } catch (drawError) {
-      console.log('画像描画エラー、フォールバック:', drawError);
-      // エラー時はカラー円にフォールバック
       drawColorCircle(cx, cy, size, type);
     }
   } else {
-    // カラー円で描画
     drawColorCircle(cx, cy, size, type);
   }
   
   ctx.restore();
 }
 
-// カラー円描画の分離関数
 function drawColorCircle(cx, cy, size, type) {
   var r = size * 0.45;
   
@@ -1446,9 +1366,10 @@ function drawParticles() {
     ctx.save();
     ctx.globalAlpha = alpha;
     
-    if (useImages && hamImages[p.type - 1] && hamImages[p.type - 1].complete) {
+    var img = IMAGE_MANAGER.getSafeImage(p.type - 1);
+    if (img) {
       var imgSize = size * 0.3;
-      ctx.drawImage(hamImages[p.type - 1], p.x - imgSize/2, p.y - imgSize/2, imgSize, imgSize);
+      ctx.drawImage(img, p.x - imgSize/2, p.y - imgSize/2, imgSize, imgSize);
     } else {
       ctx.fillStyle = COLORS[(p.type - 1) % COLORS.length];
       ctx.beginPath();
@@ -1527,17 +1448,13 @@ function update(dt) {
 
   dropTimer += dt;
   
-  // 新しい落下速度計算（優しい設定）
-  // 初期速度: 1000ms、500点ごとに25ms加速、最低250ms
-  var baseInterval = 1000; // 初期1秒
-  var speedUpPoints = 500; // 500点ごと
-  var speedUpAmount = 25; // 25ms加速
-  var minInterval = 250; // 最高速度250ms
+  var baseInterval = 1000;
+  var speedUpPoints = 500;
+  var speedUpAmount = 25;
+  var minInterval = 250;
   
   var speedUps = Math.floor(score / speedUpPoints);
   var fallInterval = Math.max(minInterval, baseInterval - (speedUps * speedUpAmount));
-  
-  console.log('スコア:', score, '加速回数:', speedUps, '落下間隔:', fallInterval + 'ms');
   
   if (dropTimer >= fallInterval) {
     dropTimer = 0;
@@ -1571,125 +1488,55 @@ function gameLoop() {
 }
 
 function gameOverNow(reason) {
-  console.log('💀 ゲームオーバー発生:', reason, 'スコア:', score);
   gameOver = true;
   
-  // まず画面表示を最優先（スコア保存でエラーが出ても画面は出す）
   setTimeout(function() {
-    console.log('🎬 ゲームオーバー画面表示開始');
     try {
-      showGameOverlay('🐹 Game Over 🐹', reason + ' スコア: ' + score);
-      console.log('🎬 ゲームオーバー画面表示完了');
+      showGameOverlay(' Game Over ', reason + ' スコア: ' + score);
     } catch (displayError) {
-      console.error('❌ 画面表示エラー:', displayError);
-      // フォールバック：alertで表示
       alert('Game Over\n' + reason + '\nスコア: ' + score);
     }
   }, 100);
   
-  // スコア保存は別途実行（エラーが出ても画面表示に影響しない）
   setTimeout(function() {
-    console.log('💾 スコア保存開始...');
     try {
       var savedScores = saveScore(score);
-      console.log('💾 スコア保存完了:', savedScores);
       
-      // 統計更新
-      updateStats(score, chain, 0, timeMode);
+      // 統計更新（重要：ここで称号チェックも実行される）
+      updateStats(score, chain, userStats.totalCleared, timeMode);
       
-      // ベストスコア表示更新
       showBest();
-      
     } catch (saveError) {
-      console.error('❌ スコア保存エラー（ゲーム続行）:', saveError);
-    }
-  }, 200);
-}
-
-function clearNow() {
-  console.log('🎉 全クリア発生! スコア:', score);
-  gameOver = true;
-  
-  // まず画面表示を最優先
-  setTimeout(function() {
-    console.log('🎬 クリア画面表示開始');
-    try {
-      showGameOverlay('🎉 おめでとう！ 🎉', '全部消しました！ スコア: ' + score);
-      console.log('🎬 クリア画面表示完了');
-    } catch (displayError) {
-      console.error('❌ 画面表示エラー:', displayError);
-      // フォールバック：alertで表示
-      alert('おめでとう！\n全部消しました！\nスコア: ' + score);
-    }
-  }, 100);
-  
-  // スコア保存は別途実行
-  setTimeout(function() {
-    console.log('💾 クリア時スコア保存開始...');
-    try {
-      var savedScores = saveScore(score);
-      console.log('💾 スコア保存完了:', savedScores);
-      
-      // 統計更新（クリア時）
-      updateStats(score, chain, 0, timeMode);
-      
-      // ベストスコア表示更新
-      showBest();
-      
-    } catch (saveError) {
-      console.error('❌ スコア保存エラー（ゲーム続行）:', saveError);
+      console.error('スコア保存エラー:', saveError);
     }
   }, 200);
 }
 
 function showGameOverlay(title, message) {
-  console.log('🎭 showGameOverlay 開始:', title, message);
-  
   try {
     var overlay = document.getElementById('gameOverlay');
     var ovTitle = document.getElementById('ovTitle');
     var ovMsg = document.getElementById('ovMsg');
     
-    console.log('🎭 要素取得:', {
-      overlay: overlay ? 'OK' : 'NULL',
-      ovTitle: ovTitle ? 'OK' : 'NULL', 
-      ovMsg: ovMsg ? 'OK' : 'NULL'
-    });
-    
     if (overlay && ovTitle && ovMsg) {
       ovTitle.textContent = title;
       ovMsg.textContent = message;
-      console.log('🎭 テキスト設定完了');
       
-      // ベストスコア表示（エラーが出ても続行）
       try {
         showBest();
-        console.log('🎭 ベストスコア表示完了');
       } catch (bestError) {
-        console.error('⚠️ ベストスコア表示エラー:', bestError);
+        console.error('ベストスコア表示エラー:', bestError);
       }
       
       overlay.style.display = 'flex';
-      console.log('🎭 オーバーレイ表示完了');
-      
     } else {
-      console.error('❌ 必要な要素が見つかりません');
-      console.error('overlay:', overlay);
-      console.error('ovTitle:', ovTitle);
-      console.error('ovMsg:', ovMsg);
-      
-      // フォールバック：alertで表示
       alert(title + '\n' + message);
     }
-    
   } catch (error) {
-    console.error('❌ showGameOverlay エラー:', error);
-    
-    // 最終フォールバック
     try {
       alert(title + '\n' + message);
     } catch (alertError) {
-      console.error('❌ アラート表示もエラー:', alertError);
+      console.error('アラート表示もエラー:', alertError);
     }
   }
 }
@@ -1701,7 +1548,7 @@ function hideGameOverlay() {
   }
 }
 
-// 図鑑システム
+// 図鑑システム    
 function loadPokedex() {
   try {
     if (typeof(Storage) !== "undefined" && localStorage) {
@@ -1720,7 +1567,6 @@ function savePokedex(pokedex) {
   try {
     if (typeof(Storage) !== "undefined" && localStorage) {
       localStorage.setItem('ham_poyo_pokedex', JSON.stringify(pokedex));
-      console.log('図鑑データ保存完了');
     }
   } catch (error) {
     console.log('savePokedex error:', error);
@@ -1741,10 +1587,22 @@ function addToPokedex(type, count) {
   if (pokedex[key].count >= 30 && !pokedex[key].discovered) {
     pokedex[key].discovered = true;
     showDiscoveryMessage(type);
+    
+    // ○○ラバー称号を解放
+    var laverTitleId = 100 + type; // 101-124
+    if (TITLE_DATA[laverTitleId]) {
+      setTimeout(function() {
+        unlockTitle(laverTitleId);
+      }, 1500); // 発見メッセージの後に表示
+    }
   }
   
   savePokedex(pokedex);
   updatePokedexCount();
+  
+  // 称号チェック（図鑑関連）
+  checkAndUnlockTitles();
+  
   return pokedex[key];
 }
 
@@ -1781,201 +1639,94 @@ function updatePokedexCount() {
   }
 }
 
-// スコアシステム（エラー完全修正版）
+// スコアシステム 
 function loadScores() {
-  console.log('📊 loadScores 開始');
-  
   try {
-    // ローカルストレージ利用可能性チェック
     if (typeof Storage === "undefined" || !localStorage) {
-      console.log('❌ ローカルストレージ利用不可');
       return [];
     }
     
-    // 複数のキーで試行
-    var keys = ['ham_poyo_scores', 'hamketsu_scores', 'game_scores'];
+    var keys = ['ham_poyo_scores', 'hamketsu_scores'];
     
     for (var i = 0; i < keys.length; i++) {
       try {
-        console.log('🔍 キー確認:', keys[i]);
         var data = localStorage.getItem(keys[i]);
-        console.log('📥 取得データ:', data, '(型:', typeof data, ')');
-        
-        if (data !== null && data !== undefined && data !== '' && data !== 'null') {
-          try {
-            var parsed = JSON.parse(data);
-            console.log('✅ JSON解析成功:', parsed);
-            
-            // 配列かどうか確認
-            if (Array.isArray(parsed)) {
-              console.log('✅ 有効な配列データを発見');
-              return parsed;
-            } else {
-              console.log('⚠️ 配列ではないデータ:', parsed);
-            }
-          } catch (parseError) {
-            console.log('❌ JSON解析エラー:', parseError.message);
+        if (data && data !== 'null') {
+          var parsed = JSON.parse(data);
+          if (Array.isArray(parsed)) {
+            return parsed;
           }
-        } else {
-          console.log('❌ 無効なデータ:', data);
         }
-      } catch (keyError) {
-        console.log('❌ キー取得エラー:', keyError.message);
+      } catch (error) {
+        continue;
       }
     }
   } catch (error) {
-    console.log('❌ loadScores 全体エラー:', error.message);
+    console.log('loadScores エラー:', error);
   }
   
-  console.log('📊 スコアデータなし、空配列を返します');
   return [];
 }
 
 function saveScore(score) {
-  console.log('🎯 スコア保存開始 - スコア:', score);
-  
-  // スコア妥当性チェック
-  if (!score || typeof score !== 'number' || score <= 0 || isNaN(score)) {
-    console.log('❌ 無効なスコア:', score);
-    return [];
-  }
-  
   try {
-    // ローカルストレージテスト
-    var testKey = 'test_' + Date.now();
-    var testValue = JSON.stringify({test: true});
-    
-    try {
-      localStorage.setItem(testKey, testValue);
-      var testResult = localStorage.getItem(testKey);
-      localStorage.removeItem(testKey);
-      
-      if (testResult !== testValue) {
-        console.error('❌ ローカルストレージテスト失敗');
-        return [{ s: score, t: Date.now() }];
-      }
-      console.log('✅ ローカルストレージテスト成功');
-    } catch (testError) {
-      console.error('❌ ローカルストレージアクセスエラー:', testError.message);
-      return [{ s: score, t: Date.now() }];
+    if (!score || typeof score !== 'number' || score <= 0 || isNaN(score)) {
+      return [];
     }
     
-    // 既存スコアの安全な読み込み
-    var existingScores = [];
-    try {
-      existingScores = loadScores();
-      console.log('📊 既存スコア読み込み成功:', existingScores);
-    } catch (loadError) {
-      console.log('⚠️ 既存スコア読み込み失敗、新規作成:', loadError.message);
-      existingScores = [];
-    }
-    
-    // 新しいスコアエントリ作成
+    var existingScores = loadScores();
     var newScoreEntry = { 
       s: parseInt(score), 
-      t: Date.now(),
-      id: 'score_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5)
+      t: Date.now()
     };
-    console.log('📝 新スコアエントリ作成:', newScoreEntry);
     
-    // 配列操作
-    var allScores = [];
-    if (Array.isArray(existingScores)) {
-      allScores = existingScores.slice(); // 安全なコピー
-    }
+    var allScores = existingScores.slice();
     allScores.push(newScoreEntry);
-    console.log('📊 スコア追加後:', allScores);
     
-    // ソート（エラーハンドリング付き）
-    try {
-      allScores.sort(function(a, b) { 
-        var scoreA = (a && typeof a.s === 'number') ? a.s : 0;
-        var scoreB = (b && typeof b.s === 'number') ? b.s : 0;
-        return scoreB - scoreA; 
-      });
-      console.log('📊 ソート完了:', allScores);
-    } catch (sortError) {
-      console.log('⚠️ ソートエラー:', sortError.message);
-      allScores = [newScoreEntry]; // フォールバック
-    }
+    allScores.sort(function(a, b) { 
+      var scoreA = (a && typeof a.s === 'number') ? a.s : 0;
+      var scoreB = (b && typeof b.s === 'number') ? b.s : 0;
+      return scoreB - scoreA; 
+    });
     
-    // トップ3のみ保持
     var topScores = allScores.slice(0, 3);
-    console.log('🏆 トップ3:', topScores);
+    var jsonString = JSON.stringify(topScores);
     
-    // JSON文字列化（安全版）
-    var jsonString;
-    try {
-      jsonString = JSON.stringify(topScores);
-      console.log('📝 JSON化成功:', jsonString);
-    } catch (stringifyError) {
-      console.error('❌ JSON化エラー:', stringifyError.message);
-      return [newScoreEntry];
-    }
-    
-    // 保存実行（複数キー）
     var saveKeys = ['ham_poyo_scores', 'hamketsu_scores'];
     var saveSuccess = false;
     
     for (var i = 0; i < saveKeys.length; i++) {
       try {
         localStorage.setItem(saveKeys[i], jsonString);
-        
-        // 保存確認
         var verification = localStorage.getItem(saveKeys[i]);
         if (verification === jsonString) {
-          console.log('✅ 保存成功 (キー:', saveKeys[i], ')');
           saveSuccess = true;
-        } else {
-          console.log('❌ 保存検証失敗 (キー:', saveKeys[i], ')');
         }
       } catch (saveError) {
-        console.log('❌ 保存エラー (キー:', saveKeys[i], '):', saveError.message);
+        continue;
       }
     }
     
     if (saveSuccess) {
-      console.log('🎉 スコア保存完了!');
-      
-      // 統計更新
-      try {
-        if (score > userStats.maxScore) {
-          userStats.maxScore = score;
-          saveUserStats();
-          console.log('📈 最高スコア更新:', score);
-        }
-      } catch (statsError) {
-        console.log('⚠️ 統計更新エラー:', statsError.message);
-      }
-      
       return topScores;
     } else {
-      console.error('❌ 全保存試行失敗');
       return [newScoreEntry];
     }
     
   } catch (error) {
-    console.error('🚨 saveScore 致命的エラー:', error.message, error.stack);
     return [{ s: score, t: Date.now() }];
   }
 }
 
 function showBest() {
-  console.log('🏆 showBest 開始');
-  
   try {
     var arr = loadScores();
-    console.log('📊 ロードしたスコア:', arr);
     
     var bestEls = [
       document.getElementById('best1'),
       document.getElementById('best2'),
       document.getElementById('best3')
     ];
-    
-    console.log('📋 ベストスコア要素取得:', bestEls.map(function(el, i) { 
-      return 'best' + (i+1) + ': ' + (el ? 'OK' : 'NULL'); 
-    }));
     
     for (var i = 0; i < bestEls.length; i++) {
       var el = bestEls[i];
@@ -1988,70 +1739,365 @@ function showBest() {
         }
         
         el.textContent = displayScore;
-        console.log('✏️ ベストスコア' + (i+1) + '位 設定:', displayScore);
-      } else {
-        console.log('❌ ベストスコア要素' + (i+1) + 'が見つかりません');
       }
     }
-    
-    // マイページのスコア表示も更新
-    updateMyPageScores();
-    
   } catch (error) {
-    console.error('❌ showBest エラー:', error.message);
-    
-    // エラー時のフォールバック表示
-    try {
-      var fallbackEls = [
-        document.getElementById('best1'),
-        document.getElementById('best2'),
-        document.getElementById('best3')
-      ];
-      
-      fallbackEls.forEach(function(el, i) {
-        if (el) {
-          el.textContent = '-';
-        }
-      });
-    } catch (fallbackError) {
-      console.error('❌ フォールバック表示もエラー:', fallbackError.message);
-    }
+    console.error('showBest エラー:', error);
   }
 }
 
-function updateMyPageScores() {
+function showTitleList() {
+  // 既存の動的オーバーレイのみを削除（固定の図鑑オーバーレイは残す）
+  var existingDynamicOverlays = document.querySelectorAll('.overlay:not(#pokedexScreen):not(#gameOverlay)');
+  existingDynamicOverlays.forEach(function(overlay) { overlay.remove(); });
+  
+  // ブラウザバック機能: 称号一覧に移動
+  BROWSER_BACK.pushState('titlelist');
+  
+  var titleListScreen = document.createElement('div');
+  titleListScreen.className = 'overlay';
+  titleListScreen.style.display = 'flex';
+  titleListScreen.style.zIndex = '1001';
+  
+  var titleListHTML = '';
+  Object.keys(TITLE_DATA).forEach(function(id) {
+    var titleId = parseInt(id);
+    var titleData = TITLE_DATA[titleId];
+    var unlocked = hasTitleUnlocked(titleId);
+    var isSelected = userStats.selectedTitle === titleId;
+    
+    var displayTitle = titleData.title;
+    var displayDesc = titleData.description;
+    
+    if (!unlocked && titleData.secret) {
+      displayTitle = '???';
+      displayDesc = '???を達成せよ';
+    }
+    
+    var progress = '';
+    if (!unlocked) {
+      var current = 0;
+      var pokedexStats = getPokedexStats();
+      
+      switch (titleData.condition_type) {
+        case 'score_over':
+          current = userStats.maxScore;
+          break;
+        case 'chain':
+          current = userStats.maxChain;
+          break;
+        case 'games_played':
+          current = userStats.gamesPlayed;
+          break;
+        case 'pokedex':
+          current = pokedexStats.discovered;
+          break;
+        case 'cleared_blocks':
+          current = userStats.totalCleared;
+          break;
+      }
+      progress = ' (' + current + '/' + titleData.condition_value + ')';
+    }
+    
+    titleListHTML += 
+      '<div style="background: ' + (unlocked ? (isSelected ? 'linear-gradient(135deg, #ffeb3b, #ffc107)' : 'rgba(255,255,255,0.2)') : 'rgba(255,255,255,0.1)') + '; border-radius: 8px; padding: 12px; margin: 8px 0; border: 2px solid ' + (isSelected ? '#ffeb3b' : 'transparent') + ';">' +
+        '<div style="display: flex; align-items: center; gap: 8px;">' +
+          '<span style="font-size: 16px;">' + (unlocked ? (isSelected ? '🌟' : '✅') : '❓') + '</span>' +
+          '<div style="flex: 1; text-align: left;">' +
+            '<div style="font-weight: bold; font-size: 14px;">' + displayTitle + progress + '</div>' +
+            '<div style="font-size: 12px; opacity: 0.8;">' + displayDesc + '</div>' +
+          '</div>' +
+          (unlocked ? '<button onclick="selectTitle(' + titleId + ')" style="background: linear-gradient(135deg, #4facfe, #00f2fe); border: none; border-radius: 6px; padding: 4px 8px; color: white; font-size: 12px; cursor: pointer;">' + (isSelected ? '装備中' : '装備') + '</button>' : '') +
+        '</div>' +
+      '</div>';
+  });
+  
+  titleListScreen.innerHTML = 
+    '<div class="card" style="max-width: 500px; max-height: 80vh; overflow-y: auto;">' +
+      '<button onclick="this.parentElement.parentElement.remove()" style="position: absolute; top: 10px; right: 15px; background: rgba(255,255,255,0.8); border: none; border-radius: 50%; width: 30px; height: 30px; cursor: pointer; font-size: 16px; color: #333;">×</button>' +
+      '<h3 style="margin: 16px 0;">🏆 称号一覧</h3>' +
+      '<div style="margin: 20px 0;">' + titleListHTML + '</div>' +
+      '<div class="row" style="margin-top: 20px;">' +
+        '<button onclick="this.parentElement.parentElement.parentElement.remove(); showMyPage();" style="background: linear-gradient(135deg, #ff6b6b, #ff8e8e);">決定</button>' +
+      '</div>' +
+    '</div>';
+  
+  document.body.appendChild(titleListScreen);
+}
+
+function selectTitle(titleId) {
+  userStats.selectedTitle = titleId;
+  saveUserStats();
+  
+  // 称号一覧を再表示
+  showTitleList();
+}
+
+function showIconSelect() {
+  // 既存の動的オーバーレイのみを削除（固定の図鑑オーバーレイは残す）
+  var existingDynamicOverlays = document.querySelectorAll('.overlay:not(#pokedexScreen):not(#gameOverlay)');
+  existingDynamicOverlays.forEach(function(overlay) { overlay.remove(); });
+  
+  // ブラウザバック機能: アイコン選択に移動
+  BROWSER_BACK.pushState('iconselect');
+  
+  // 画像システムの初期化を確実に行う
+  IMAGE_MANAGER.loadAllStageImages();
+  
+  var iconSelectScreen = document.createElement('div');
+  iconSelectScreen.className = 'overlay';
+  iconSelectScreen.style.display = 'flex';
+  iconSelectScreen.style.zIndex = '1001';
+  
+  var pokedex = loadPokedex();
+  var stageNames = ['春のケツ', '夏のケツ', '秋のケツ', '冬のケツ'];
+  
+  var iconListHTML = '';
+  
+  // デフォルトアイコン
+  iconListHTML += 
+    '<div onclick="selectIcon(0)" style="display: inline-block; margin: 8px; cursor: pointer; text-align: center; border: 3px solid ' + (userStats.selectedIcon === 0 ? '#ffeb3b' : 'transparent') + '; border-radius: 12px; padding: 8px;">' +
+      '<div style="width: 60px; height: 60px; border-radius: 50%; background: linear-gradient(135deg, #ccc, #999); display: flex; align-items: center; justify-content: center; font-size: 12px; color: #666; margin: 0 auto 4px auto;">No Image</div>' +
+      '<div style="font-size: 10px;">デフォルト</div>' +
+    '</div>';
+  
+  // 発見済みはむケツ
+  for (var i = 1; i <= 24; i++) {
+    var key = 'type_' + i;
+    var entry = pokedex[key] || { count: 0, discovered: false };
+    
+    if (entry.discovered) {
+      var stageIndex = Math.floor((i - 1) / 6);
+      var data = POKEDEX_DATA[i];
+      var isSelected = userStats.selectedIcon === i;
+      
+      var iconDisplay = getSafeImageDisplay(i, 'icon');
+      
+      iconListHTML += 
+        '<div onclick="selectIcon(' + i + ')" style="display: inline-block; margin: 8px; cursor: pointer; text-align: center; border: 3px solid ' + (isSelected ? '#ffeb3b' : 'transparent') + '; border-radius: 12px; padding: 8px;">' +
+          iconDisplay +
+          '<div style="font-size: 10px; margin-top: 4px;">' + data.name + '</div>' +
+        '</div>';
+    }
+  }
+  
+  iconSelectScreen.innerHTML = 
+    '<div class="card" style="max-width: 500px; max-height: 80vh; overflow-y: auto;">' +
+      '<button onclick="this.parentElement.parentElement.remove()" style="position: absolute; top: 10px; right: 15px; background: rgba(255,255,255,0.8); border: none; border-radius: 50%; width: 30px; height: 30px; cursor: pointer; font-size: 16px; color: #333;">×</button>' +
+      '<h3 style="margin: 16px 0;">🖼️ アイコン選択</h3>' +
+      '<p style="font-size: 12px; opacity: 0.8;">発見済みのはむケツから選択できます</p>' +
+      '<div style="margin: 20px 0; display: flex; flex-wrap: wrap; justify-content: center;">' + iconListHTML + '</div>' +
+      '<div class="row" style="margin-top: 20px;">' +
+        '<button onclick="this.parentElement.parentElement.parentElement.remove(); showMyPage();" style="background: linear-gradient(135deg, #ff6b6b, #ff8e8e);">決定</button>' +
+      '</div>' +
+    '</div>';
+  
+  document.body.appendChild(iconSelectScreen);
+}
+
+function selectIcon(iconId) {
+  userStats.selectedIcon = iconId;
+  saveUserStats();
+  
+  // アイコン選択画面を再表示
+  showIconSelect();
+}
+
+// マイページシェア機能
+function shareMyPage(platform) {
+  console.log('📤 マイページシェア:', platform);
+  
   try {
-    // マイページが開いている場合、そのスコア表示も更新
-    var myPageElements = document.querySelectorAll('.overlay .card');
-    myPageElements.forEach(function(card) {
-      if (card && card.innerHTML && card.innerHTML.includes('マイページ')) {
-        var scores = loadScores();
+    var bestScores = loadScores();
+    var currentTitle = getSelectedTitleName();
+    var bestScore = bestScores[0] ? bestScores[0].s : 0;
+    
+    // シェアテキスト作成
+    var shareText = 
+      '称号「' + currentTitle + '」\n' +
+      'ベストスコア: ' + bestScore + '点\n\n' +
+      'はむケツを集めてぷるぷる消すゲーム 🎮\n' +
+      'はむケツぽよぽよ、ぜひ遊んでみてね！\n' +
+      '#ハムスター #はむチラ #はむケツぽよぽよ';
+    
+    var gameUrl = 'https://hamuchiranagaya.github.io/ketsu-poyo/';
+    
+    if (platform === 'x') {
+      // X (Twitter) でシェア
+      var tweetText = encodeURIComponent(shareText);
+      var tweetUrl = encodeURIComponent(gameUrl);
+      var xUrl = 'https://twitter.com/intent/tweet?text=' + tweetText + '&url=' + tweetUrl;
+      window.open(xUrl, '_blank');
+      
+    } else if (platform === 'line') {
+      // LINE でシェア
+      var lineText = encodeURIComponent(shareText + '\n' + gameUrl);
+      var lineUrl = 'https://social-plugins.line.me/lineit/share?url=' + encodeURIComponent(gameUrl) + '&text=' + lineText;
+      window.open(lineUrl, '_blank');
+    }
+    
+  } catch (error) {
+    console.error('❌ シェアエラー:', error);
+    alert('シェアに失敗しました。もう一度お試しください。');
+  }
+}
+
+// ユーザー統計関連
+function loadUserStats() {
+  try {
+    if (typeof(Storage) !== "undefined" && localStorage) {
+      var saved = localStorage.getItem('ham_poyo_user_stats');
+      if (saved) {
+        var loaded = JSON.parse(saved);
+        userStats = Object.assign(userStats, loaded);
+      }
+    }
+  } catch (error) {
+    console.log('ユーザー統計読み込みエラー:', error);
+  }
+  
+  // デフォルト称号を確実に取得済みにする
+  if (!hasTitleUnlocked(1)) {
+    unlockTitle(1);
+  }
+}
+
+function saveUserStats() {
+  try {
+    if (typeof(Storage) !== "undefined" && localStorage) {
+      localStorage.setItem('ham_poyo_user_stats', JSON.stringify(userStats));
+    }
+  } catch (error) {
+    console.log('ユーザー統計保存エラー:', error);
+  }
+}
+
+function updateStats(newScore, newChain, blocksCleared, isTimeMode) {
+  console.log('統計更新開始 - スコア:', newScore, 'チェイン:', newChain);
+  
+  // 統計更新
+  if (newScore > userStats.maxScore) {
+    userStats.maxScore = newScore;
+  }
+  if (newChain > userStats.maxChain) {
+    userStats.maxChain = newChain;
+  }
+  userStats.gamesPlayed++;
+  userStats.totalCleared += blocksCleared || 0;
+  
+  // 制限時間モード統計更新
+  if (isTimeMode) {
+    userStats.timeModePlayCount++;
+    if (!gameOver) {
+      userStats.timeModeClears++;
+    }
+  }
+  
+  // 称号チェック
+  checkAndUnlockTitles();
+  saveUserStats();
+}
+
+function checkAndUnlockTitles() {
+  console.log('称号チェック開始');
+  
+  try {
+    var pokedexStats = getPokedexStats();
+    
+    Object.keys(TITLE_DATA).forEach(function(id) {
+      var titleId = parseInt(id);
+      var titleData = TITLE_DATA[titleId];
+      
+      if (!titleData) {
+        console.log('称号データが見つかりません:', titleId);
+        return;
+      }
+      
+      if (hasTitleUnlocked(titleId)) return;
+      
+      var unlocked = false;
+      
+      try {
+        switch (titleData.condition_type) {
+          case 'default':
+            unlocked = true;
+            break;
+          case 'score_over':
+            unlocked = userStats.maxScore >= titleData.condition_value;
+            break;
+          case 'chain':
+            unlocked = userStats.maxChain >= titleData.condition_value;
+            break;
+          case 'games_played':
+            unlocked = userStats.gamesPlayed >= titleData.condition_value;
+            break;
+          case 'pokedex':
+            unlocked = pokedexStats.discovered >= titleData.condition_value;
+            break;
+          case 'pokedex_complete':
+            unlocked = pokedexStats.discovered >= 24;
+            break;
+          case 'cleared_blocks':
+            unlocked = userStats.totalCleared >= titleData.condition_value;
+            break;
+          case 'time_mode_clear':
+            unlocked = userStats.timeModeClears >= titleData.condition_value;
+            break;
+          case 'time_mode_play':
+            unlocked = userStats.timeModePlayCount >= titleData.condition_value;
+            break;
+          case 'pokedex_unlock':
+            // 特定のはむケツが発見されているかチェック
+            var pokedex = loadPokedex();
+            var entry = pokedex['type_' + titleData.condition_value];
+            unlocked = entry && entry.discovered;
+            break;
+          default:
+            console.log('不明な条件タイプ:', titleData.condition_type);
+            break;
+        }
         
-        // IDベースで要素を探す
-        var scoreEls = [
-          card.querySelector('#mypage-best1'),
-          card.querySelector('#mypage-best2'),
-          card.querySelector('#mypage-best3')
-        ];
-        
-        scoreEls.forEach(function(el, i) {
-          if (el) {
-            var scoreData = scores[i];
-            var displayText = (i+1) + '位: ';
-            
-            if (scoreData && typeof scoreData === 'object' && typeof scoreData.s === 'number') {
-              displayText += scoreData.s;
-            } else {
-              displayText += '-';
-            }
-            
-            el.textContent = displayText;
-          }
-        });
+        if (unlocked) {
+          unlockTitle(titleId);
+        }
+      } catch (conditionError) {
+        console.log('称号条件チェックエラー:', titleId, conditionError);
       }
     });
   } catch (error) {
-    console.log('⚠️ マイページスコア更新エラー:', error.message);
+    console.error('称号チェック全体エラー:', error);
+  }
+}
+
+function hasTitleUnlocked(titleId) {
+  try {
+    var unlockedTitles = JSON.parse(localStorage.getItem('ham_poyo_unlocked_titles') || '[]');
+    return unlockedTitles.includes(titleId);
+  } catch (error) {
+    console.log('称号解放状態チェックエラー:', error);
+    return false;
+  }
+}
+
+function unlockTitle(titleId) {
+  try {
+    var unlockedTitles = JSON.parse(localStorage.getItem('ham_poyo_unlocked_titles') || '[]');
+    if (!unlockedTitles.includes(titleId)) {
+      unlockedTitles.push(titleId);
+      localStorage.setItem('ham_poyo_unlocked_titles', JSON.stringify(unlockedTitles));
+      
+      // 称号取得通知
+      var titleData = TITLE_DATA[titleId];
+      if (titleData && titleId !== 1) { // 初期称号以外は通知
+        setTimeout(function() {
+          alert('🏆 新しい称号を獲得しました！\n\n「' + titleData.title + '」\n' + titleData.description);
+        }, 1000);
+      }
+      
+      console.log('称号解放:', titleId, titleData ? titleData.title : '不明');
+    }
+  } catch (error) {
+    console.error('称号解放エラー:', error);
   }
 }
 
@@ -2081,494 +2127,46 @@ window.addEventListener('keyup', function(e) {
 // リサイズ
 window.addEventListener('resize', fit);
 
-// デバッグ機能追加（強化版）
-function debugLocalStorage() {
-  var debugInfo = [];
-  
-  try {
-    debugInfo.push('=== ローカルストレージ診断 ===');
-    debugInfo.push('日時: ' + new Date().toLocaleString());
-    debugInfo.push('');
-    
-    // 基本チェック
-    var storageAvailable = typeof Storage !== "undefined" && localStorage;
-    debugInfo.push('✓ Storage利用可能: ' + (storageAvailable ? 'Yes' : 'No'));
-    
-    if (!storageAvailable) {
-      debugInfo.push('❌ ローカルストレージが利用できません');
-      alert(debugInfo.join('\n'));
-      return;
-    }
-    
-    // ストレージ容量テスト
-    try {
-      var testData = JSON.stringify({test: 'data', number: 123, array: [1,2,3]});
-      var testKey = 'capacity_test_' + Date.now();
-      localStorage.setItem(testKey, testData);
-      var retrieved = localStorage.getItem(testKey);
-      localStorage.removeItem(testKey);
-      debugInfo.push('✓ 基本読み書き: ' + (retrieved === testData ? 'OK' : 'NG'));
-    } catch (e) {
-      debugInfo.push('❌ 基本読み書きエラー: ' + e.message);
-    }
-    
-    debugInfo.push('');
-    debugInfo.push('=== 現在の保存状況 ===');
-    
-    // 全キー表示
-    var allKeys = [];
-    try {
-      for (var i = 0; i < localStorage.length; i++) {
-        allKeys.push(localStorage.key(i));
-      }
-      debugInfo.push('保存済みキー数: ' + allKeys.length);
-      debugInfo.push('キー一覧: ' + allKeys.join(', '));
-    } catch (e) {
-      debugInfo.push('❌ キー取得エラー: ' + e.message);
-    }
-    
-    debugInfo.push('');
-    
-    // スコア関連キーの詳細チェック
-    var scoreKeys = ['ham_poyo_scores', 'hamketsu_scores'];
-    scoreKeys.forEach(function(key) {
-      try {
-        var rawData = localStorage.getItem(key);
-        debugInfo.push('--- ' + key + ' ---');
-        debugInfo.push('生データ: ' + (rawData || '(null)'));
-        debugInfo.push('データ型: ' + typeof rawData);
-        debugInfo.push('長さ: ' + (rawData ? rawData.length : 0));
-        
-        if (rawData && rawData !== 'null') {
-          try {
-            var parsed = JSON.parse(rawData);
-            debugInfo.push('JSON解析: 成功');
-            debugInfo.push('解析結果型: ' + typeof parsed);
-            debugInfo.push('配列判定: ' + Array.isArray(parsed));
-            if (Array.isArray(parsed)) {
-              debugInfo.push('配列長: ' + parsed.length);
-              debugInfo.push('内容: ' + JSON.stringify(parsed));
-            }
-          } catch (parseErr) {
-            debugInfo.push('JSON解析: 失敗 - ' + parseErr.message);
-          }
-        }
-        debugInfo.push('');
-      } catch (keyErr) {
-        debugInfo.push('❌ ' + key + ' チェックエラー: ' + keyErr.message);
-      }
-    });
-    
-    // 現在のゲーム状態
-    debugInfo.push('=== 現在のゲーム状態 ===');
-    debugInfo.push('現在スコア: ' + score);
-    debugInfo.push('ゲーム中: ' + gameStarted);
-    debugInfo.push('ゲームオーバー: ' + gameOver);
-    
-    // loadScores()の実行テスト
-    debugInfo.push('');
-    debugInfo.push('=== loadScores()テスト ===');
-    try {
-      var testScores = loadScores();
-      debugInfo.push('実行結果: 成功');
-      debugInfo.push('戻り値型: ' + typeof testScores);
-      debugInfo.push('配列判定: ' + Array.isArray(testScores));
-      debugInfo.push('内容: ' + JSON.stringify(testScores));
-    } catch (loadErr) {
-      debugInfo.push('実行結果: エラー - ' + loadErr.message);
-    }
-    
-    // 統計情報
-    debugInfo.push('');
-    debugInfo.push('=== 統計情報 ===');
-    debugInfo.push('最高スコア: ' + userStats.maxScore);
-    debugInfo.push('プレイ回数: ' + userStats.gamesPlayed);
-    debugInfo.push('最高チェイン: ' + userStats.maxChain);
-    
-  } catch (error) {
-    debugInfo.push('❌ 診断中にエラー: ' + error.message);
-    debugInfo.push('スタック: ' + error.stack);
-  }
-  
-  // 結果表示
-  var result = debugInfo.join('\n');
-  console.log('🔍 デバッグ結果:\n' + result);
-  alert(result);
-  
-  return result;
-}
-
-// 手動スコア保存機能（デバッグ用）
-function manualScoreSave() {
-  var testScore = prompt('テストスコアを入力してください:', '999');
-  if (testScore && !isNaN(testScore)) {
-    testScore = parseInt(testScore);
-    console.log('🧪 手動スコア保存テスト開始:', testScore);
-    var result = saveScore(testScore);
-    console.log('🧪 手動保存結果:', result);
-    showBest();
-    alert('テストスコア ' + testScore + ' を保存しました。\n結果: ' + JSON.stringify(result));
-  } else {
-    alert('無効なスコアです');
-  }
-}
-
-// スコアリセット機能
-function resetAllScores() {
-  if (confirm('すべてのスコアをリセットしますか？')) {
-    try {
-      localStorage.removeItem('ham_poyo_scores');
-      localStorage.removeItem('hamketsu_scores');
-      localStorage.removeItem('game_scores');
-      console.log('🗑️ スコアリセット完了');
-      showBest();
-      alert('スコアをリセットしました');
-    } catch (error) {
-      alert('リセットエラー: ' + error.message);
-    }
-  }
-}
-// 簡単なインストール機能（onclick直接指定版）
-function simpleInstall() {
-  console.log('📱 簡単インストール実行');
-  alert('📱 ホーム画面への追加方法\n\n【iPhone/iPad (Safari)】\n1. 下部の「共有」ボタン（□↑）をタップ\n2. 「ホーム画面に追加」を選択\n\n【Android (Chrome)】\n1. 右上の「⋮」メニューをタップ\n2. 「ホーム画面に追加」を選択\n\n【PC (Chrome)】\n1. アドレスバー右の「インストール」アイコンをクリック\n2. または右上メニューから「アプリをインストール」');
-}
-function saveScoreSimple(score) {
-  console.log('🔄 簡易版スコア保存開始:', score);
-  
-  try {
-    if (!score || score <= 0) {
-      console.log('❌ 無効なスコア');
-      return [];
-    }
-    
-    // 最もシンプルな保存方法
-    var key = 'simple_scores';
-    var newScore = { s: parseInt(score), t: Date.now() };
-    
-    // 既存データ取得（エラー時は空配列）
-    var existing = [];
-    try {
-      var data = localStorage.getItem(key);
-      if (data && data !== 'null') {
-        existing = JSON.parse(data) || [];
-      }
-    } catch (e) {
-      console.log('既存データ読み込み失敗、新規作成');
-      existing = [];
-    }
-    
-    // 配列確認
-    if (!Array.isArray(existing)) {
-      existing = [];
-    }
-    
-    // 追加
-    existing.push(newScore);
-    
-    // ソート
-    existing.sort(function(a, b) { return (b.s || 0) - (a.s || 0); });
-    
-    // トップ3
-    var top3 = existing.slice(0, 3);
-    
-    // 保存
-    localStorage.setItem(key, JSON.stringify(top3));
-    
-    console.log('✅ 簡易版保存完了:', top3);
-    return top3;
-    
-  } catch (error) {
-    console.error('❌ 簡易版保存もエラー:', error);
-    return [{ s: score, t: Date.now() }];
-  }
-}
+// 初期化
 window.addEventListener('load', function() {
-  console.log('🚀 ページ読み込み完了');
-  console.log('startGame関数の確認:', typeof startGame);
-  console.log('selectStage関数の確認:', typeof selectStage);
-  console.log('showPokedex関数の確認:', typeof showPokedex);
+  console.log('ページ読み込み完了');
   
-  // ラバー称号の自動生成
-  generateRubberTitles();
+  // ブラウザバック機能を初期化
+  BROWSER_BACK.init();
+  
+  // 全ステージの画像を初期化時に読み込み開始
+  IMAGE_MANAGER.loadAllStageImages();
   
   // ユーザー統計とポケデックス初期化
   loadUserStats();
   updatePokedexCount();
   
-  // スコア読み込みテスト
-  console.log('📊 初期スコア確認:', loadScores());
-  
-  // デバッグ: ローカルストレージの状態確認
-  console.log('🔍 ローカルストレージ利用可能:', typeof Storage !== "undefined" && localStorage);
-  if (typeof Storage !== "undefined" && localStorage) {
-    console.log('🔍 現在のストレージキー数:', localStorage.length);
-    var keys = [];
-    for (var i = 0; i < localStorage.length; i++) {
-      keys.push(localStorage.key(i));
-    }
-    console.log('🔍 現在のキー:', keys);
-  }
-  
-  // ゲームスタートボタンのイベントリスナー追加
-  var gameStartBtn = document.getElementById('gameStartButton');
-  if (gameStartBtn) {
-    gameStartBtn.addEventListener('click', function() {
-      console.log('ゲームスタートボタンがクリックされました（イベントリスナー）');
-      startGame();
-    });
-    console.log('ゲームスタートボタンのイベントリスナーを設定しました');
-  } else {
-    console.error('ゲームスタートボタンが見つかりません');
-  }
-  
-  // デバッグ用ショートカット（開発中のみ）
-  window.debugGame = {
-    saveTestScore: function(score) { return saveScore(score || 500); },
-    showScores: function() { console.log(loadScores()); },
-    clearScores: function() { 
-      localStorage.removeItem('ham_poyo_scores');
-      localStorage.removeItem('hamketsu_scores');
-      console.log('スコアクリア完了');
-    }
-  };
-  
-  console.log('🎮 デバッグ機能: window.debugGame で利用可能');
+  console.log('ゲーム準備完了');
 });
 
-console.log('全関数定義完了');
+// グローバル関数として登録
+window.selectStage = selectStage;
+window.startGame = startGame;
+window.showPokedex = showPokedex;
+window.showMyPage = showMyPage;
+window.shareToX = shareToX;
+window.copyURL = copyURL;
+window.simpleInstall = simpleInstall;
+window.selectTitle = selectTitle;
+window.selectIcon = selectIcon;
+window.showTitleList = showTitleList;
+window.showIconSelect = showIconSelect;
+window.shareMyPage = shareMyPage;
+window.closePokedex = closePokedex;
+window.backToStart = backToStart;
+window.restart = restart;
+window.shareResult = shareResult;
+window.moveLeft = moveLeft;
+window.moveRight = moveRight;
+window.softDrop = softDrop;
+window.hardDrop = hardDrop;
+window.rotate = rotate;
+window.toggleTimeMode = toggleTimeMode;
 </script>
-
-  <style>
-    :root{--bg:linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);--panel:#2a3f5f;--fg:#fff;--muted:#b8c6db;--btn:#34495e;--accent:#f39c12;--card-bg:#34495e;}
-    html,body{margin:0;padding:0;background:var(--bg);color:var(--fg);font-family:system-ui,-apple-system,'Segoe UI',Roboto,'Hiragino Sans',sans-serif;min-height:100vh}
-    body{background:linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)}
-    #wrap{display:flex;flex-direction:column;align-items:center;gap:10px;padding:12px 8px}
-    header{display:flex;align-items:center;gap:10px}
-    header img{width:40px;height:40px;border-radius:8px;display:none}
-    header.ready img{display:block}
-    h1, h2{margin:0;font-size:20px;font-weight:800;text-align:center;text-shadow:2px 2px 4px rgba(0,0,0,0.3)}
-    h1{font-size:32px;color:#fff}
-    canvas{background:var(--panel);border-radius:12px;box-shadow:0 8px 24px rgba(0,0,0,.35)}
-    .hud{display:flex;gap:14px;align-items:center;justify-content:center;flex-wrap:wrap}
-    .hud .muted{color:var(--muted)}
-    .btnbar{display:flex;justify-content:space-between;gap:4px;width:100%;touch-action:manipulation;flex-wrap:wrap}
-    .btnbar > button{flex:1;max-width:19%;height:60px;border:none;border-radius:12px;background:var(--btn);color:var(--fg);font-weight:700;font-size:14px;box-shadow:0 4px 12px rgba(0,0,0,.25)}
-    .btnbar > button:active{transform:translateY(1px);opacity:.9}
-    .btnbar > .wide{flex:1 1 100%;max-width:100%;margin-top:8px}
-    .note{opacity:.85;font-size:12px;text-align:center;line-height:1.4;max-width:620px;color:#fff;text-shadow:1px 1px 2px rgba(0,0,0,0.3)}
-    a{color:var(--accent);text-decoration:none}
-    a:hover{text-decoration:underline}
-    .pill{background:rgba(255,255,255,0.2);border-radius:999px;padding:6px 10px;font-size:12px;cursor:pointer;border:none;color:var(--fg);backdrop-filter:blur(10px)}
-    .pill:hover{background:rgba(255,255,255,0.3)}
-    .overlay{position:fixed;inset:0;background:rgba(0,0,0,.7);display:none;align-items:center;justify-content:center;padding:16px;z-index:1000;backdrop-filter:blur(5px)}
-    .card{background:linear-gradient(135deg, #ff6b6b, #ffa500, #ff69b4, #9c88ff);border:3px solid rgba(255,255,255,0.9);border-radius:24px;max-width:520px;width:96%;padding:24px;box-shadow:0 20px 40px rgba(0,0,0,.5), 0 0 20px rgba(255,255,255,0.2);position:relative;overflow:hidden;animation:cardPop 0.5s ease-out}
-    @keyframes cardPop{0%{transform:scale(0.5) rotate(-5deg);opacity:0}50%{transform:scale(1.1) rotate(2deg)}100%{transform:scale(1) rotate(0deg);opacity:1}}
-    .card::before{content:'';position:absolute;top:-50%;left:-50%;width:200%;height:200%;background:linear-gradient(45deg, transparent, rgba(255,255,255,0.15), transparent);animation:shimmer 2s infinite;pointer-events:none}
-    @keyframes shimmer{0%{transform:translateX(-100%) translateY(-100%) rotate(45deg)}100%{transform:translateX(100%) translateY(100%) rotate(45deg)}}
-    .card h3{margin:8px 0 16px 0;font-size:32px;color:#fff;text-shadow:3px 3px 6px rgba(0,0,0,0.6);text-align:center;font-weight:bold;animation:titleBounce 0.8s ease-out 0.2s both}
-    @keyframes titleBounce{0%{transform:translateY(-20px);opacity:0}60%{transform:translateY(5px)}100%{transform:translateY(0);opacity:1}}
-    .card p{color:#fff;font-size:18px;text-shadow:2px 2px 4px rgba(0,0,0,0.6);text-align:center;margin:16px 0;animation:fadeInUp 0.6s ease-out 0.4s both}
-    @keyframes fadeInUp{0%{transform:translateY(20px);opacity:0}100%{transform:translateY(0);opacity:1}}
-    .row{display:flex;gap:16px;flex-wrap:wrap;justify-content:center;animation:fadeInUp 0.6s ease-out 0.6s both}
-    .row button{background:linear-gradient(135deg, #4facfe, #00f2fe);border:3px solid rgba(255,255,255,0.9);border-radius:20px;padding:14px 24px;color:#fff;font-weight:700;cursor:pointer;font-size:16px;text-shadow:1px 1px 2px rgba(0,0,0,0.4);transition:all 0.3s;box-shadow:0 6px 15px rgba(0,0,0,0.3);position:relative;overflow:hidden}
-    .row button::before{content:'';position:absolute;inset:0;background:linear-gradient(45deg, transparent, rgba(255,255,255,0.2), transparent);transform:translateX(-100%);transition:transform 0.6s}
-    .row button:hover::before{transform:translateX(100%)}
-    .row button:hover{transform:translateY(-3px) scale(1.05);box-shadow:0 10px 25px rgba(0,0,0,0.4);background:linear-gradient(135deg, #00f2fe, #4facfe)}
-    .row button:active{transform:translateY(-1px) scale(1.02)}
-    .scores{display:flex;gap:16px;margin:24px 0;justify-content:center;flex-wrap:wrap;animation:fadeInUp 0.6s ease-out 0.5s both}
-    .scores span{background:linear-gradient(135deg, rgba(255,255,255,0.95), rgba(255,255,255,0.8));color:#333;border-radius:16px;padding:10px 16px;font-weight:700;font-size:18px;box-shadow:0 4px 12px rgba(0,0,0,0.3);border:2px solid rgba(255,255,255,0.9);animation:scoreGlow 2s ease-in-out infinite alternate}
-    @keyframes scoreGlow{0%{box-shadow:0 4px 12px rgba(0,0,0,0.3)}100%{box-shadow:0 4px 12px rgba(255,255,255,0.4), 0 0 20px rgba(255,255,255,0.2)}}
-    
-    /* スタート画面 */
-    .start-screen{text-align:center;padding:20px;background:rgba(255,255,255,0.1);border-radius:20px;margin:20px;backdrop-filter:blur(10px);box-shadow:0 8px 32px rgba(0,0,0,0.2)}
-    .start-screen h1{font-size:32px;margin:20px 0;color:#fff;text-shadow:2px 2px 4px rgba(0,0,0,0.3)}
-    .app-icon{width:80px;height:80px;border-radius:16px;margin:0 auto 20px auto;display:none;box-shadow:0 4px 16px rgba(0,0,0,0.3)}
-    .app-icon.ready{display:block}
-    .game-description{font-size:14px;margin:20px 0;color:#fff;line-height:1.6;text-shadow:1px 1px 2px rgba(0,0,0,0.3)}
-    .start-btn{background:linear-gradient(135deg,#f39c12,#e67e22);color:#fff;border:none;border-radius:16px;padding:16px 32px;font-size:18px;font-weight:bold;cursor:pointer;box-shadow:0 8px 24px rgba(243,156,18,.3);margin:20px 0;text-shadow:1px 1px 2px rgba(0,0,0,0.3)}
-    .start-btn:hover{transform:translateY(-2px);box-shadow:0 12px 32px rgba(243,156,18,.4)}
-    .install-section{margin:20px 0;padding:16px;background:rgba(255,255,255,0.1);border-radius:12px;backdrop-filter:blur(10px)}
-    .install-btn{background:rgba(255,255,255,0.2);border:2px dashed rgba(255,255,255,0.4);border-radius:12px;padding:12px 20px;cursor:pointer;display:inline-flex;align-items:center;gap:8px;margin:8px 0;color:#fff;backdrop-filter:blur(10px)}
-    .install-btn:hover{background:rgba(255,255,255,0.3);border-color:rgba(255,255,255,0.6)}
-    .youtube-link{display:block;margin:16px auto;color:var(--accent);font-weight:600;text-shadow:1px 1px 2px rgba(0,0,0,0.3);text-align:center}
-    .youtube-link:hover{color:#fff;text-decoration:underline}
-    .share-buttons{display:flex;gap:12px;justify-content:center;margin:16px 0}
-    .share-btn{background:rgba(255,255,255,0.2);border:none;border-radius:12px;padding:10px 16px;color:#fff;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:6px;backdrop-filter:blur(10px)}
-    .share-btn:hover{background:rgba(255,255,255,0.3)}
-    .share-btn.x-btn{background:rgba(0,0,0,0.3);border:1px solid rgba(255,255,255,0.2)}
-    .share-btn.x-btn:hover{background:rgba(0,0,0,0.5)}
-    
-    /* ステージ選択 */
-    .stage-selection{margin:20px 0}
-    .stage-selection h3{color:#fff;margin-bottom:16px;text-shadow:2px 2px 4px rgba(0,0,0,0.3)}
-    .stage-buttons{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;max-width:400px;margin:0 auto}
-    .stage-btn{background:rgba(255,255,255,0.1);border:2px solid rgba(255,255,255,0.2);border-radius:12px;padding:12px 8px;cursor:pointer;color:#fff;display:flex;flex-direction:column;align-items:center;gap:4px;backdrop-filter:blur(10px);transition:all 0.3s}
-    .stage-btn:hover{background:rgba(255,255,255,0.2);border-color:rgba(255,255,255,0.4)}
-    .stage-btn.active{background:linear-gradient(135deg,#f39c12,#e67e22);border-color:#f39c12;box-shadow:0 4px 12px rgba(243,156,18,.3)}
-    .stage-icon{font-size:24px}
-    .stage-name{font-weight:bold;font-size:14px}
-    .game-area{display:none}
-    .game-area.active{display:flex;flex-direction:column;align-items:center;gap:10px}
-    
-    /* 図鑑画面 */
-    .pokedex-card{max-width: 600px; max-height: 80vh; overflow-y: auto;}
-    .pokedex-grid{display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; margin: 20px 0;}
-    .pokedex-entry{border-radius: 12px; padding: 12px; text-align: center; color: white; font-size: 12px; border: 2px solid; transition: all 0.3s; position: relative;}
-    .pokedex-entry.discovered{background: linear-gradient(135deg, #4facfe, #00f2fe); border-color: rgba(255,255,255,0.8);}
-    .pokedex-entry.discovered:hover{transform: translateY(-2px) scale(1.02); box-shadow: 0 8px 20px rgba(79, 172, 254, 0.4);}
-    .pokedex-entry.undiscovered{background: rgba(255,255,255,0.1); border-color: rgba(255,255,255,0.3);}
-    .pokedex-image{transition: transform 0.3s;}
-    .pokedex-entry.discovered:hover .pokedex-image{transform: scale(1.1);}
-    
-    /* 詳細画面のボタンスタイル */
-    .detail-btn{transition: all 0.3s; position: relative; overflow: hidden;}
-    .detail-btn::before{content: ''; position: absolute; inset: 0; background: linear-gradient(45deg, transparent, rgba(255,255,255,0.2), transparent); transform: translateX(-100%); transition: transform 0.6s;}
-    .detail-btn:hover::before{transform: translateX(100%);}
-    .detail-btn:hover{transform: translateY(-2px); box-shadow: 0 6px 16px rgba(0,0,0,0.3);}
-    
-    /* レスポンシブ対応 */
-    @media (max-width: 480px) {
-      .pokedex-grid{grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 8px;}
-      .pokedex-entry{padding: 8px; font-size: 11px;}
-    }
-  </style>
-</head>
-<body>
-<div id="wrap">
-  <!-- スタート画面 -->
-  <div id="startScreen" class="start-screen">
-    <img id="appicon" alt="アプリアイコン" class="app-icon"/>
-    <h1>はむケツぽよぽよ</h1>
-    
-    <div class="install-section">
-      <p>📱 ホーム画面に追加してアプリのように使えます</p>
-      <button id="installBtn" class="install-btn" style="display: inline-flex;" onclick="simpleInstall()">
-        <span>📲</span>
-        <span id="installText">ホーム画面に追加</span>
-      </button>
-      <div id="installDebug" style="font-size: 10px; margin-top: 8px; color: rgba(255,255,255,0.7); display: none;">
-        デバッグ情報がここに表示されます
-      </div>
-    </div>
-    
-    <div class="game-description">
-      4個以上の同じ色のはむケツをつなげて消そう！<br/>
-      連鎖でスコアアップ！
-    </div>
-    
-    <!-- ステージ選択 -->
-    <div class="stage-selection">
-      <h3>🌸 ステージを選んでね 🌸</h3>
-      <div class="stage-buttons">
-        <button class="stage-btn active" onclick="selectStage(0)">
-          <span class="stage-icon">🌸</span>
-          <span class="stage-name">春のケツ</span>
-        </button>
-        <button class="stage-btn" onclick="selectStage(1)">
-          <span class="stage-icon">🌻</span>
-          <span class="stage-name">夏のケツ</span>
-        </button>
-        <button class="stage-btn" onclick="selectStage(2)">
-          <span class="stage-icon">🍂</span>
-          <span class="stage-name">秋のケツ</span>
-        </button>
-        <button class="stage-btn" onclick="selectStage(3)">
-          <span class="stage-icon">❄️</span>
-          <span class="stage-name">冬のケツ</span>
-        </button>
-      </div>
-    </div>
-    
-    <button class="start-btn" onclick="console.log('スタートボタンクリック'); startGame();">
-      ゲームスタート
-    </button>
-    
-    <!-- 図鑑ボタン -->
-    <button class="start-btn" onclick="showPokedex()" style="font-size: 16px; padding: 12px 24px; margin: 10px 0; background: linear-gradient(135deg, #9c88ff, #6c5ce7);">
-      📖 図鑑を見る (<span id="pokedexCount">0/24</span>)
-    </button>
-    
-    <!-- マイページボタン -->
-    <button class="start-btn" onclick="showMyPage()" style="font-size: 16px; padding: 12px 24px; margin: 10px 0; background: linear-gradient(135deg, #ff6b6b, #ff8e8e);">
-      📄 マイページ
-    </button>
-    
-    <a href="https://youtube.com/@hamuchira" target="_blank" class="youtube-link">
-      🎬 もっと！はむチラ長屋ch.
-    </a>
-    
-    <div class="share-buttons">
-      <button class="share-btn x-btn" onclick="shareToX()">
-        Xでシェア
-      </button>
-      <button class="share-btn" onclick="copyURL()">
-        <span>📋</span>
-        <span id="copyText">URLコピー</span>
-      </button>
-    </div>
-  </div>
-
-  <!-- ゲーム画面 -->
-  <div id="gameArea" class="game-area">
-    <header>
-      <h2>はむケツぽよぽよ</h2>
-    </header>
-
-    <div class="hud">
-      <div>スコア: <span id="score">0</span></div>
-      <div>チェイン: <span id="chain">0</span></div>
-      <div id="timeWrap" class="muted" style="display:none;">残り: <span id="time">180</span>s</div>
-      <button id="mode" class="pill" title="制限時間モード切替" onclick="toggleTimeMode()">制限時間:OFF</button>
-    </div>
-
-    <canvas id="game" width="384" height="640"></canvas>
-
-    <div class="btnbar" aria-label="タップ操作">
-      <button onclick="rotate()">↺</button>
-      <button onclick="moveLeft()">←</button>
-      <button onclick="softDrop()">↓</button>
-      <button onclick="moveRight()">→</button>
-      <button onclick="rotate()">↻</button>
-      <button class="wide" onclick="hardDrop()">瞬間落下</button>
-    </div>
-
-    <div class="note">
-      操作：← → 移動 / ↑ 回転 / ↓ ソフトドロップ / スペース 瞬間落下 / R リスタート
-    </div>
-  </div>
-</div>
-
-<!-- 図鑑画面オーバーレイ -->
-<div id="pokedexScreen" class="overlay">
-  <div class="card pokedex-card">
-    <h3>📖 はむケツ図鑑 📖</h3>
-    <p>はむケツを30個消すと図鑑に登録されます！</p>
-    
-    <div id="pokedexGrid" class="pokedex-grid">
-      <!-- 図鑑エントリがここに動的生成される -->
-    </div>
-    
-    <div class="row" style="margin-top: 20px;">
-      <button onclick="closePokedex()" style="background: linear-gradient(135deg, #ff6b6b, #ff8e8e);">閉じる</button>
-    </div>
-  </div>
-</div>
-
-<!-- ゲームオーバー・クリア画面オーバーレイ -->
-<div id="gameOverlay" class="overlay">
-  <div class="card" role="dialog" aria-modal="true">
-    <h3 id="ovTitle">結果</h3>
-    <p id="ovMsg"></p>
-    <div class="scores">ベスト: <span id="best1">-</span><span id="best2">-</span><span id="best3">-</span></div>
-    <div class="row" style="margin-top:10px">
-      <button onclick="restart()">リトライ</button>
-      <button onclick="backToStart()">諦める</button>
-      <button onclick="shareResult()">結果をXでシェア</button>
-    </div>
-    <div id="shareAlt" class="note" style="display:none;margin-top:8px"></div>
-  </div>
-</div>
 </body>
 </html>
-      
