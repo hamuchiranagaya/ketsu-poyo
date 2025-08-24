@@ -942,6 +942,16 @@ function restart() {
   hideGameOverlay();
 }
 
+  function clearNow() {
+  var clearBonus = 1000;
+  score += clearBonus;
+  updateHUD();
+  
+  setTimeout(function() {
+    gameOverNow('完全クリア！おめでとう！');
+  }, 1000);
+}
+  
 function shareResult() {
   var text = encodeURIComponent('はむケツぽよぽよでスコア ' + score + ' 点を記録！🹐✨\nはむケツを4個以上つなげて、ぷるぷる消すパズルゲーム\n\n#はむチラ #はむケツぽよぽよ');
   var url = encodeURIComponent('https://hamuchiranagaya.github.io/ketsu-poyo/');
