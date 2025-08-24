@@ -1291,14 +1291,11 @@ function scanForMatches() {
     // 連鎖の深度を増加
     currentChainDepth++;
     
-    // スコア計算（現在の深度を使用）
-    var basePoints = totalCleared * 10;
-    var chainMultiplier = totalChainCount; // 累積チェイン数
-if (currentChainDepth >= 2) {
-  chainMultiplier += currentChainDepth; // 2連鎖以上の場合のみ加算
-}
-var addedPoints = basePoints * Math.max(1, chainMultiplier);
-    score += addedPoints;
+// スコア計算（累積チェイン数を使用）
+var basePoints = totalCleared * 10;
+var cumulativeChain = totalChainCount + currentChainDepth;
+var addedPoints = basePoints * Math.max(1, cumulativeChain);
+score += addedPoints;
     
     console.log('連鎖深度:', currentChainDepth, '消去数:', totalCleared, '獲得点:', addedPoints);
     
