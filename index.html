@@ -921,10 +921,13 @@ function backToStart() {
   BROWSER_BACK.currentScreen = 'start';
 }
 
+// restart関数も修正
 function restart() {
   grid = resetGrid();
   score = 0;
-  chain = 0;  // ゲーム開始時のみリセット
+  chain = 0;
+  totalChainCount = 0;     // 累積チェイン数リセット
+  currentChainDepth = 0;   // 現在の連鎖深度リセット
   gameOver = false;
   dropTimer = 0;
   resolving = false;
@@ -937,17 +940,6 @@ function restart() {
   
   updateHUD();
   hideGameOverlay();
-}
-
-function clearNow() {
-  // 完全クリア時の特別処理
-  var clearBonus = 1000; // クリアボーナス
-  score += clearBonus;
-  updateHUD();
-  
-  setTimeout(function() {
-    gameOverNow('完全クリア！おめでとう！');
-  }, 1000);
 }
 
 function shareResult() {
@@ -1191,6 +1183,13 @@ function lockPiece() {
   }, 200);
 }
 
+// 修正版: 連鎖深度を測定するシステム
+
+// グローバル変数に追加（他のグローバル変数の近くに追加）
+var currentChainDepth = 0; // 現在の連鎖の深度をカウント
+var totalChainCount = 0;   // 累積チェイン数（画面表示用）
+
+// processResolving関数を修正
 function processResolving() {
   phaseTimer += 16;
   
@@ -1218,6 +1217,7 @@ function processResolving() {
   }
 }
 
+// scanForMatches関数を完全に修正
 function scanForMatches() {
   for (var r = 0; r < ROWS; r++) {
     for (var c = 0; c < COLS; c++) {
@@ -1276,24 +1276,35 @@ function scanForMatches() {
   }
 
   if (totalCleared > 0) {
-    // チェイン数を累積で増加（リセットしない）
-    chain++;
+    // 連鎖の深度を増加
+    currentChainDepth++;
     
-    // 新しいスコア計算: 基本点数 × チェイン倍率
+    // スコア計算（現在の深度を使用）
     var basePoints = totalCleared * 10;
-    var chainMultiplier = chain; // チェイン数がそのまま倍率
-    var addedPoints = basePoints * chainMultiplier;
-    
+    var addedPoints = basePoints * Math.max(1, currentChainDepth);
     score += addedPoints;
     
-    console.log('チェイン:', chain, '消去数:', totalCleared, '基本点:', basePoints, '倍率:', chainMultiplier, '獲得点:', addedPoints);
+    console.log('連鎖深度:', currentChainDepth, '消去数:', totalCleared, '獲得点:', addedPoints);
     
     phase = 1;
     phaseTimer = 0;
     updateHUD();
   } else {
-    // ブロックが消去されなかった場合のみ、解決フェーズを終了
-    // チェインカウントはリセットしない（1プレイ中は維持）
+    // ブロックが消去されなかった = 連鎖終了
+    if (currentChainDepth >= 2) {
+      // 2連鎖以上の場合のみ累積チェインに加算
+      totalChainCount += currentChainDepth;
+      console.log('連鎖終了！連鎖数:', currentChainDepth, '累積チェイン:', totalChainCount);
+    } else if (currentChainDepth === 1) {
+      console.log('単発消去のためチェインカウントに加算されません');
+    }
+    
+    // 連鎖深度をリセット
+    currentChainDepth = 0;
+    
+    // チェイン表示を更新
+    chain = totalChainCount;
+    updateHUD();
     
     resolving = false;
     falling = nextPair;
@@ -2073,6 +2084,7 @@ function saveUserStats() {
   }
 }
 
+// updateStats関数も修正（maxChainの計算を修正）
 function updateStats(newScore, newChain, blocksCleared, isTimeMode) {
   console.log('統計更新開始 - スコア:', newScore, 'チェイン:', newChain);
   
@@ -2080,11 +2092,11 @@ function updateStats(newScore, newChain, blocksCleared, isTimeMode) {
   if (newScore > userStats.maxScore) {
     userStats.maxScore = newScore;
   }
-  if (newChain > userStats.maxChain) {
-    userStats.maxChain = newChain;
+  // totalChainCountを使用してmaxChainを更新
+  if (totalChainCount > userStats.maxChain) {
+    userStats.maxChain = totalChainCount;
   }
   userStats.gamesPlayed++;
-  // 注意: totalClearedはclearMarkedBlocks関数で既に更新されているので、ここでは追加しない
   
   // 制限時間モード統計更新
   if (isTimeMode) {
