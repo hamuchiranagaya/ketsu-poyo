@@ -421,6 +421,8 @@ var resolving = false;
 var phase = 0;
 var phaseTimer = 0;
 var particles = [];
+var currentChainDepth = 0; // 現在進行中の連鎖の深度
+var totalChains = 0;       // 累積チェイン数（表示用）
 
 // ゲーム設定
 var canvas = null;
@@ -925,6 +927,8 @@ function restart() {
   grid = resetGrid();
   score = 0;
   chain = 0;
+  currentChainDepth = 0;  // 連鎖深度リセット
+  totalChains = 0;        // 累積チェインリセット
   gameOver = false;
   dropTimer = 0;
   resolving = false;
@@ -939,16 +943,6 @@ function restart() {
   hideGameOverlay();
 }
 
-function clearNow() {
-  var clearBonus = 1000;
-  score += clearBonus;
-  updateHUD();
-  
-  setTimeout(function() {
-    gameOverNow('完全クリア！おめでとう！');
-  }, 1000);
-}
-  
 function shareResult() {
   var text = encodeURIComponent('はむケツぽよぽよでスコア ' + score + ' 点を記録！🹐✨\nはむケツを4個以上つなげて、ぷるぷる消すパズルゲーム\n\n#はむチラ #はむケツぽよぽよ');
   var url = encodeURIComponent('https://hamuchiranagaya.github.io/ketsu-poyo/');
@@ -1275,32 +1269,35 @@ function scanForMatches() {
   }
 
   if (totalCleared > 0) {
-    // 連鎖の深度を増加（まだ画面表示は更新しない）
-    chain++;
+    // 現在の連鎖深度を増加
+    currentChainDepth++;
     
-    // スコア計算
+    // スコア計算（現在の連鎖深度 × 基本点数）
     var basePoints = totalCleared * 10;
-    var addedPoints = basePoints * chain;
+    var addedPoints = basePoints * currentChainDepth;
     score += addedPoints;
     
-    console.log('連鎖深度:', chain, '消去数:', totalCleared, '獲得点:', addedPoints);
+    console.log('連鎖進行中 - 深度:', currentChainDepth, '消去数:', totalCleared, '獲得点:', addedPoints);
     
     phase = 1;
     phaseTimer = 0;
-    updateHUD(); // スコアのみ更新
+    updateHUD();
   } else {
-    // 連鎖終了：2連鎖以上の場合のみ累積チェインに加算
-    if (chain >= 2) {
-      // 既にchainに正しい連鎖数が入っているので、そのまま使用
-      console.log('連鎖終了！連鎖数:', chain, 'を累積チェインに加算');
-      // chainはそのまま維持（リセットしない）
-    } else if (chain === 1) {
-      // 単発消去の場合はchainを0に戻す
-      chain = 0;
-      console.log('単発消去のためチェインを0に戻しました');
+    // 連鎖終了の処理
+    if (currentChainDepth >= 2) {
+      // 2連鎖以上の場合のみ累積チェインに加算
+      totalChains += currentChainDepth;
+      console.log('★連鎖終了！連鎖数:', currentChainDepth, '累積チェイン:', totalChains);
+    } else if (currentChainDepth === 1) {
+      console.log('単発消去 - チェインに加算されません');
     }
     
-    updateHUD(); // 最終的なチェイン表示を更新
+    // 現在の連鎖深度をリセット
+    currentChainDepth = 0;
+    
+    // 画面表示を更新（累積チェインを表示）
+    chain = totalChains;
+    updateHUD();
     
     resolving = false;
     falling = nextPair;
