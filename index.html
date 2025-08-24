@@ -421,8 +421,6 @@ var resolving = false;
 var phase = 0;
 var phaseTimer = 0;
 var particles = [];
-var currentChainDepth = 0; // 現在進行中の連鎖の深度
-var totalChains = 0;       // 累積チェイン数（表示用）
 
 // ゲーム設定
 var canvas = null;
@@ -624,7 +622,7 @@ var POKEDEX_DATA = {
   6: { name: "やばケツ", owner: "アマレッティ", youtubeUrl: "https://youtu.be/gX3N5M8Am9Y?si=E1ZusoKkKbtr5lzh", description: "やばれってぃのやばすぎて震えたくなるケツ" },
   7: { name: "ぱんケツ", owner: "ぱんな", youtubeUrl: "https://youtube.com/shorts/hGF6ZgvpJOU?si=T2up9cTIYPmdrNcg", description: "エステに励む美意識高いケツ" },
   8: { name: "しらたまケツ", owner: "しゅくれ", youtubeUrl: "https://www.youtube.com/playlist?list=PLpF705pFAL33lcPjtwFPaEtMrSzNEUh0o", description: "白玉のようにふんわりしたケツ" },
-  9: { name: "ころケツ", owner: "ころん", youtubeUrl: "", description: "ころころと可愛いケツ" },
+  9: { name: "ころケツ", owner: "まふぃん", youtubeUrl: "", description: "ころころと可愛いケツ" },
   10: { name: "ソイけつ", owner: "ソイラテ", youtubeUrl: "https://youtu.be/LYIQSYtYdUE", description: "優しく賢いおケツ" },
   11: { name: "フィナけつ", owner: "フィナンシェ", youtubeUrl: "https://youtu.be/ZNxXAzQSnQU?si=pcM2s7OSoMcSIE59", description: "空飛ぶ系風船のように丸いケツ" },
   12: { name: "かるケツ", owner: "かるめら", youtubeUrl: "https://www.youtube.com/watch?v=qPglcK9qugU", description: "ふんわり丸くて美味しそうなケツ" },
@@ -923,12 +921,13 @@ function backToStart() {
   BROWSER_BACK.currentScreen = 'start';
 }
 
+// restart関数も修正
 function restart() {
   grid = resetGrid();
   score = 0;
   chain = 0;
-  currentChainDepth = 0;  // 連鎖深度リセット
-  totalChains = 0;        // 累積チェインリセット
+  totalChainCount = 0;     // 累積チェイン数リセット
+  currentChainDepth = 0;   // 現在の連鎖深度リセット
   gameOver = false;
   dropTimer = 0;
   resolving = false;
@@ -943,6 +942,16 @@ function restart() {
   hideGameOverlay();
 }
 
+  function clearNow() {
+  var clearBonus = 1000;
+  score += clearBonus;
+  updateHUD();
+  
+  setTimeout(function() {
+    gameOverNow('完全クリア！おめでとう！');
+  }, 1000);
+}
+  
 function shareResult() {
   var text = encodeURIComponent('はむケツぽよぽよでスコア ' + score + ' 点を記録！🹐✨\nはむケツを4個以上つなげて、ぷるぷる消すパズルゲーム\n\n#はむチラ #はむケツぽよぽよ');
   var url = encodeURIComponent('https://hamuchiranagaya.github.io/ketsu-poyo/');
@@ -1184,6 +1193,13 @@ function lockPiece() {
   }, 200);
 }
 
+// 修正版: 連鎖深度を測定するシステム
+
+// グローバル変数に追加（他のグローバル変数の近くに追加）
+var currentChainDepth = 0; // 現在の連鎖の深度をカウント
+var totalChainCount = 0;   // 累積チェイン数（画面表示用）
+
+// processResolving関数を修正
 function processResolving() {
   phaseTimer += 16;
   
@@ -1211,6 +1227,7 @@ function processResolving() {
   }
 }
 
+// scanForMatches関数を完全に修正
 function scanForMatches() {
   for (var r = 0; r < ROWS; r++) {
     for (var c = 0; c < COLS; c++) {
@@ -1269,34 +1286,34 @@ function scanForMatches() {
   }
 
   if (totalCleared > 0) {
-    // 現在の連鎖深度を増加
+    // 連鎖の深度を増加
     currentChainDepth++;
     
-    // スコア計算（現在の連鎖深度 × 基本点数）
+    // スコア計算（現在の深度を使用）
     var basePoints = totalCleared * 10;
-    var addedPoints = basePoints * currentChainDepth;
+    var addedPoints = basePoints * Math.max(1, currentChainDepth);
     score += addedPoints;
     
-    console.log('連鎖進行中 - 深度:', currentChainDepth, '消去数:', totalCleared, '獲得点:', addedPoints);
+    console.log('連鎖深度:', currentChainDepth, '消去数:', totalCleared, '獲得点:', addedPoints);
     
     phase = 1;
     phaseTimer = 0;
     updateHUD();
   } else {
-    // 連鎖終了の処理
+    // ブロックが消去されなかった = 連鎖終了
     if (currentChainDepth >= 2) {
       // 2連鎖以上の場合のみ累積チェインに加算
-      totalChains += currentChainDepth;
-      console.log('★連鎖終了！連鎖数:', currentChainDepth, '累積チェイン:', totalChains);
+      totalChainCount += currentChainDepth;
+      console.log('連鎖終了！連鎖数:', currentChainDepth, '累積チェイン:', totalChainCount);
     } else if (currentChainDepth === 1) {
-      console.log('単発消去 - チェインに加算されません');
+      console.log('単発消去のためチェインカウントに加算されません');
     }
     
-    // 現在の連鎖深度をリセット
+    // 連鎖深度をリセット
     currentChainDepth = 0;
     
-    // 画面表示を更新（累積チェインを表示）
-    chain = totalChains;
+    // チェイン表示を更新
+    chain = totalChainCount;
     updateHUD();
     
     resolving = false;
@@ -2077,6 +2094,7 @@ function saveUserStats() {
   }
 }
 
+// updateStats関数も修正（maxChainの計算を修正）
 function updateStats(newScore, newChain, blocksCleared, isTimeMode) {
   console.log('統計更新開始 - スコア:', newScore, 'チェイン:', newChain);
   
@@ -2084,11 +2102,11 @@ function updateStats(newScore, newChain, blocksCleared, isTimeMode) {
   if (newScore > userStats.maxScore) {
     userStats.maxScore = newScore;
   }
-  if (newChain > userStats.maxChain) {
-    userStats.maxChain = newChain;
+  // totalChainCountを使用してmaxChainを更新
+  if (totalChainCount > userStats.maxChain) {
+    userStats.maxChain = totalChainCount;
   }
   userStats.gamesPlayed++;
-  // 注意: totalClearedはclearMarkedBlocks関数で既に更新されているので、ここでは追加しない
   
   // 制限時間モード統計更新
   if (isTimeMode) {
