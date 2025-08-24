@@ -928,6 +928,7 @@ function restart() {
   chain = 0;
   totalChainCount = 0;     // 累積チェイン数リセット
   currentChainDepth = 0;   // 現在の連鎖深度リセット
+  isChainActive = false;   // 連鎖フラグリセット
   gameOver = false;
   dropTimer = 0;
   resolving = false;
@@ -1185,6 +1186,10 @@ function lockPiece() {
   falling = null;
   dropBlocks();
   
+  // 連鎖開始時にカウントをリセット
+  currentChainDepth = 0;
+  isChainActive = true;
+  
   setTimeout(function() {
     resolving = true;
     phase = 0;
@@ -1227,7 +1232,7 @@ function processResolving() {
   }
 }
 
-// scanForMatches関数を完全に修正
+// scanForMatches関数を修正
 function scanForMatches() {
   for (var r = 0; r < ROWS; r++) {
     for (var c = 0; c < COLS; c++) {
@@ -1294,23 +1299,24 @@ function scanForMatches() {
     var addedPoints = basePoints * Math.max(1, currentChainDepth);
     score += addedPoints;
     
-    console.log('連鎖深度:', currentChainDepth, '消去数:', totalCleared, '獲得点:', addedPoints);
+    console.log('連鎖深度:', currentChainDepth, '消去数:', totalCleared, '獲得点:', addedPoints, '連鎖フラグ:', isChainActive);
     
     phase = 1;
     phaseTimer = 0;
     updateHUD();
   } else {
     // ブロックが消去されなかった = 連鎖終了
-    if (currentChainDepth >= 2) {
+    if (isChainActive && currentChainDepth >= 2) {
       // 2連鎖以上の場合のみ累積チェインに加算
       totalChainCount += currentChainDepth;
       console.log('連鎖終了！連鎖数:', currentChainDepth, '累積チェイン:', totalChainCount);
-    } else if (currentChainDepth === 1) {
+    } else if (isChainActive && currentChainDepth === 1) {
       console.log('単発消去のためチェインカウントに加算されません');
     }
     
-    // 連鎖深度をリセット
+    // 連鎖終了時にリセット
     currentChainDepth = 0;
+    isChainActive = false;
     
     // チェイン表示を更新
     chain = totalChainCount;
@@ -1336,7 +1342,7 @@ function scanForMatches() {
     }
   }
 }
-
+  
 function clearMarkedBlocks() {
   var clearedCount = 0;
   var clearedTypes = {};
