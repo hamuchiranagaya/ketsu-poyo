@@ -1287,27 +1287,28 @@ function scanForMatches() {
     }
   }
 
-  if (totalCleared > 0) {
+if (totalCleared > 0) {
     // 連鎖の深度を増加
     currentChainDepth++;
     
-// スコア計算（累積チェイン数を使用）
-var basePoints = totalCleared * 10;
-var cumulativeChain = totalChainCount + currentChainDepth;
-var addedPoints = basePoints * Math.max(1, cumulativeChain);
-score += addedPoints;
+    // スコア計算（累積チェイン数を使用）
+    var basePoints = totalCleared * 10;
+    var cumulativeChain = totalChainCount + Math.max(0, currentChainDepth - 1);
+    var addedPoints = basePoints * Math.max(1, cumulativeChain);
+    score += addedPoints;
     
     console.log('連鎖深度:', currentChainDepth, '消去数:', totalCleared, '獲得点:', addedPoints);
     
     phase = 1;
     phaseTimer = 0;
     updateHUD();
-  } else {
+} else {
     // ブロックが消去されなかった = 連鎖終了
     if (currentChainDepth >= 2) {
-      // 2連鎖以上の場合のみ累積チェインに加算
-      totalChainCount += currentChainDepth;
-      console.log('連鎖終了！連鎖数:', currentChainDepth, '累積チェイン:', totalChainCount);
+      // 2連鎖以上の場合、実際のチェイン数は(深度-1)
+      var actualChainCount = currentChainDepth - 1;
+      totalChainCount += actualChainCount;
+      console.log('連鎖終了！連鎖数:', actualChainCount, '累積チェイン:', totalChainCount);
     } else if (currentChainDepth === 1) {
       console.log('単発消去のためチェインカウントに加算されません');
     }
