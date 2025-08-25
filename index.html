@@ -1296,14 +1296,14 @@ if (totalCleared > 0) {
     var addedPoints;
     
     if (currentChainDepth >= 2) {
-      // 2回目以降の消去（連鎖）の場合は累積チェイン数を適用
+      // 2回目以降の消去（連鎖）の場合
       var multiplier = currentChainDepth;
       addedPoints = basePoints * multiplier;
-      console.log('連鎖発生 - ' + currentChainDepth + 'チェイン, 消去数:', totalCleared, '倍率:', multiplier, '獲得点:', addedPoints);
+      console.log('連鎖中 - ' + currentChainDepth + '回目の消去, 消去数:', totalCleared, '倍率:', multiplier, '獲得点:', addedPoints);
     } else {
-      // 単発消去の場合は倍率なし
+      // 初回消去の場合は倍率なし
       addedPoints = basePoints;
-      console.log('単発消去 - 消去数:', totalCleared, '獲得点:', addedPoints);
+      console.log('初回消去 - 消去数:', totalCleared, '獲得点:', addedPoints);
     }
     
     score += addedPoints;
@@ -1312,15 +1312,22 @@ if (totalCleared > 0) {
     phaseTimer = 0;
     updateHUD();
 } else {
-    // ブロックが消去されなかった = 連鎖終了
+    // ブロックが消去されなかった = 1回のプレイ終了
+    var chainCountForThisPlay = 0;
+    
     if (currentChainDepth >= 2) {
-      // 2連鎖以上の場合、実際のチェイン数は(深度-1)
-      var actualChainCount = currentChainDepth;
-      totalChainCount += actualChainCount;
-      console.log('連鎖終了！連鎖数:', actualChainCount, '累積チェイン:', totalChainCount);
+      // 2回以上連続消去した場合：チェイン数 = 連続消去回数
+      chainCountForThisPlay = currentChainDepth;
+      console.log('連鎖終了！このプレイのチェイン数:', chainCountForThisPlay, '(', currentChainDepth, '回連続消去)');
     } else if (currentChainDepth === 1) {
-      console.log('単発消去のためチェインカウントに加算されません');
+      // 1回だけ消去した場合：0チェイン（単発消去）
+      chainCountForThisPlay = 0;
+      console.log('単発消去のためチェイン数は0');
     }
+    
+    // 累積チェイン数に加算
+    totalChainCount += chainCountForThisPlay;
+    console.log('累積チェイン数:', totalChainCount);
     
     // 連鎖深度をリセット
     currentChainDepth = 0;
@@ -1348,8 +1355,6 @@ if (totalCleared > 0) {
       clearNow();
     }
   }
-}
-
 function clearMarkedBlocks() {
   var clearedCount = 0;
   var clearedTypes = {};
