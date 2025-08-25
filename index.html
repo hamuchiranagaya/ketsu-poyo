@@ -114,31 +114,82 @@
   transform: translate(-50%, -50%);
   z-index: 999;
   pointer-events: none;
-  font-size: 48px;
-  font-weight: bold;
+  font-size: 64px;
+  font-weight: 900;
   color: #FFD700;
-  text-shadow: 3px 3px 6px rgba(0,0,0,0.8), 0 0 20px rgba(255,215,0,0.6);
-  animation: chainPop 1.5s ease-out forwards;
+  text-shadow: 
+    4px 4px 0px #FF6B35,
+    8px 8px 0px #FF8E53,
+    0 0 30px rgba(255, 215, 0, 0.8),
+    0 0 60px rgba(255, 107, 53, 0.6);
+  animation: chainExplosion 2s ease-out forwards;
+  white-space: nowrap;
 }
 
-@keyframes chainPop {
+@keyframes chainExplosion {
   0% {
-    transform: translate(-50%, -50%) scale(0.3);
+    transform: translate(-50%, -50%) scale(0.1) rotate(-10deg);
     opacity: 0;
+    filter: blur(10px);
   }
-  20% {
-    transform: translate(-50%, -50%) scale(1.2);
+  15% {
+    transform: translate(-50%, -50%) scale(1.5) rotate(5deg);
+    opacity: 1;
+    filter: blur(0px);
+    text-shadow: 
+      4px 4px 0px #FF6B35,
+      8px 8px 0px #FF8E53,
+      0 0 40px rgba(255, 215, 0, 1),
+      0 0 80px rgba(255, 107, 53, 0.8);
+  }
+  30% {
+    transform: translate(-50%, -50%) scale(1.2) rotate(-2deg);
     opacity: 1;
   }
-  50% {
-    transform: translate(-50%, -50%) scale(1.0);
+  70% {
+    transform: translate(-50%, -50%) scale(1.0) rotate(0deg);
     opacity: 1;
   }
   100% {
-    transform: translate(-50%, -60%) scale(0.8);
+    transform: translate(-50%, -55%) scale(0.7) rotate(0deg);
+    opacity: 0;
+    filter: blur(5px);
+  }
+}
+
+/* 爆発エフェクト用のパーティクル */
+.chain-particle {
+  position: fixed;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 998;
+}
+
+.chain-particle.star {
+  background: linear-gradient(45deg, #FFD700, #FFA500);
+  box-shadow: 0 0 10px rgba(255, 215, 0, 0.8);
+}
+
+.chain-particle.spark {
+  background: linear-gradient(45deg, #FF6B35, #FF8E53);
+  box-shadow: 0 0 8px rgba(255, 107, 53, 0.8);
+}
+
+@keyframes particleExplosion {
+  0% {
+    transform: scale(0);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  100% {
     opacity: 0;
   }
-} 
+}
     
     
   </style>
@@ -1554,36 +1605,96 @@ function drawParticles() {
   }
 }
 
-  function showChainEffect(chainCount) {
+function showChainEffect(chainCount) {
   // 既存の連鎖エフェクトを削除
-  var existingEffect = document.querySelector('.chain-effect');
-  if (existingEffect) {
-    existingEffect.remove();
-  }
+  var existingEffects = document.querySelectorAll('.chain-effect, .chain-particle');
+  existingEffects.forEach(function(effect) {
+    effect.remove();
+  });
   
+  // メインの連鎖テキスト
   var chainEffect = document.createElement('div');
   chainEffect.className = 'chain-effect';
-  chainEffect.textContent = chainCount + 'チェイン！';
+  chainEffect.textContent = chainCount + 'チェイン！！';
   
-  // 連鎖数に応じて色を変える
-  if (chainCount >= 5) {
-    chainEffect.style.color = '#FF69B4'; // ピンク
-    chainEffect.style.textShadow = '3px 3px 6px rgba(0,0,0,0.8), 0 0 20px rgba(255,105,180,0.6)';
-  } else if (chainCount >= 3) {
+  // 連鎖数に応じて色とサイズを変える
+  if (chainCount >= 10) {
+    chainEffect.style.color = '#FF1493'; // ディープピンク
+    chainEffect.style.fontSize = '80px';
+    chainEffect.style.textShadow = 
+      '4px 4px 0px #8B008B, 8px 8px 0px #FF69B4, 0 0 40px rgba(255, 20, 147, 1), 0 0 80px rgba(255, 105, 180, 0.8)';
+  } else if (chainCount >= 7) {
+    chainEffect.style.color = '#FF4500'; // オレンジレッド
+    chainEffect.style.fontSize = '76px';
+    chainEffect.style.textShadow = 
+      '4px 4px 0px #DC143C, 8px 8px 0px #FF6347, 0 0 40px rgba(255, 69, 0, 1), 0 0 80px rgba(220, 20, 60, 0.8)';
+  } else if (chainCount >= 5) {
     chainEffect.style.color = '#FF6B6B'; // 赤
-    chainEffect.style.textShadow = '3px 3px 6px rgba(0,0,0,0.8), 0 0 20px rgba(255,107,107,0.6)';
-  } else {
-    chainEffect.style.color = '#FFD700'; // 金色（デフォルト）
+    chainEffect.style.fontSize = '72px';
+    chainEffect.style.textShadow = 
+      '4px 4px 0px #DC143C, 8px 8px 0px #FF1493, 0 0 40px rgba(255, 107, 107, 1), 0 0 80px rgba(220, 20, 60, 0.8)';
+  } else if (chainCount >= 3) {
+    chainEffect.style.color = '#FFA500'; // オレンジ
+    chainEffect.style.fontSize = '68px';
+    chainEffect.style.textShadow = 
+      '4px 4px 0px #FF6B35, 8px 8px 0px #FF8E53, 0 0 40px rgba(255, 165, 0, 1), 0 0 80px rgba(255, 107, 53, 0.8)';
   }
   
   document.body.appendChild(chainEffect);
+  
+  // 爆発パーティクルを生成
+  createChainParticles(chainCount);
   
   // アニメーション終了後に要素を削除
   setTimeout(function() {
     if (chainEffect && chainEffect.parentNode) {
       chainEffect.remove();
     }
-  }, 1500);
+    // パーティクルも削除
+    var particles = document.querySelectorAll('.chain-particle');
+    particles.forEach(function(particle) {
+      particle.remove();
+    });
+  }, 2000);
+}
+
+function createChainParticles(chainCount) {
+  var particleCount = Math.min(chainCount * 8, 50); // 最大50個
+  var centerX = window.innerWidth / 2;
+  var centerY = window.innerHeight / 2;
+  
+  for (var i = 0; i < particleCount; i++) {
+    var particle = document.createElement('div');
+    particle.className = 'chain-particle ' + (Math.random() > 0.5 ? 'star' : 'spark');
+    
+    // ランダムな方向と距離
+    var angle = (Math.PI * 2 * i) / particleCount + (Math.random() - 0.5) * 0.5;
+    var distance = 100 + Math.random() * 150;
+    var targetX = centerX + Math.cos(angle) * distance;
+    var targetY = centerY + Math.sin(angle) * distance;
+    
+    particle.style.left = centerX + 'px';
+    particle.style.top = centerY + 'px';
+    
+    // パーティクルのサイズをランダムに
+    var size = 4 + Math.random() * 8;
+    particle.style.width = size + 'px';
+    particle.style.height = size + 'px';
+    
+    document.body.appendChild(particle);
+    
+    // アニメーションを適用
+    var duration = 800 + Math.random() * 400;
+    particle.style.animation = 'particleExplosion ' + duration + 'ms ease-out forwards';
+    
+    // 移動アニメーション
+    setTimeout((function(p, tx, ty, dur) {
+      return function() {
+        p.style.transition = 'transform ' + dur + 'ms ease-out, opacity ' + dur + 'ms ease-out';
+        p.style.transform = 'translate(' + (tx - centerX) + 'px, ' + (ty - centerY) + 'px)';
+      };
+    })(particle, targetX, targetY, duration), 50);
+  }
 }
   
 function draw() {
