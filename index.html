@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
   <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Pragma" content="no-cache">
   <meta http-equiv="Expires" content="0">
   <title>はむケツぽよぽよ</title>
   <link rel="manifest" href="manifest.json">
@@ -104,6 +105,42 @@
       .pokedex-grid{grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 8px;}
       .pokedex-entry{padding: 8px; font-size: 11px;}
     }
+    
+   /* 連鎖表示エフェクト */
+.chain-effect {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 999;
+  pointer-events: none;
+  font-size: 48px;
+  font-weight: bold;
+  color: #FFD700;
+  text-shadow: 3px 3px 6px rgba(0,0,0,0.8), 0 0 20px rgba(255,215,0,0.6);
+  animation: chainPop 1.5s ease-out forwards;
+}
+
+@keyframes chainPop {
+  0% {
+    transform: translate(-50%, -50%) scale(0.3);
+    opacity: 0;
+  }
+  20% {
+    transform: translate(-50%, -50%) scale(1.2);
+    opacity: 1;
+  }
+  50% {
+    transform: translate(-50%, -50%) scale(1.0);
+    opacity: 1;
+  }
+  100% {
+    transform: translate(-50%, -60%) scale(0.8);
+    opacity: 0;
+  }
+} 
+    
+    
   </style>
 </head>
 <body>
@@ -1291,13 +1328,22 @@ if (totalCleared > 0) {
     // 連鎖の深度を増加
     currentChainDepth++;
     
-    // スコア計算（累積チェイン数を使用）
+    // スコア計算
     var basePoints = totalCleared * 10;
-    var cumulativeChain = totalChainCount + Math.max(0, currentChainDepth - 1);
-    var addedPoints = basePoints * Math.max(1, cumulativeChain);
-    score += addedPoints;
+    var addedPoints;
     
-    console.log('連鎖深度:', currentChainDepth, '消去数:', totalCleared, '獲得点:', addedPoints);
+    if (currentChainDepth >= 2) {
+      // 2回目以降の消去（連鎖）の場合は累積チェイン数を適用
+      var multiplier = totalChainCount + currentChainDepth;
+      addedPoints = basePoints * multiplier;
+      console.log('連鎖発生 - ' + currentChainDepth + 'チェイン, 消去数:', totalCleared, '倍率:', multiplier, '獲得点:', addedPoints);
+    } else {
+      // 単発消去の場合は倍率なし
+      addedPoints = basePoints;
+      console.log('単発消去 - 消去数:', totalCleared, '獲得点:', addedPoints);
+    }
+    
+    score += addedPoints;
     
     phase = 1;
     phaseTimer = 0;
@@ -1308,6 +1354,10 @@ if (totalCleared > 0) {
       // 2連鎖以上の場合、実際のチェイン数は(深度-1)
       var actualChainCount = currentChainDepth - 1;
       totalChainCount += actualChainCount;
+      
+      // 連鎖エフェクトを表示（2チェイン以上の時のみ）
+      showChainEffect(actualChainCount);
+      
       console.log('連鎖終了！連鎖数:', actualChainCount, '累積チェイン:', totalChainCount);
     } else if (currentChainDepth === 1) {
       console.log('単発消去のためチェインカウントに加算されません');
@@ -1504,6 +1554,38 @@ function drawParticles() {
   }
 }
 
+  function showChainEffect(chainCount) {
+  // 既存の連鎖エフェクトを削除
+  var existingEffect = document.querySelector('.chain-effect');
+  if (existingEffect) {
+    existingEffect.remove();
+  }
+  
+  var chainEffect = document.createElement('div');
+  chainEffect.className = 'chain-effect';
+  chainEffect.textContent = chainCount + 'チェイン！';
+  
+  // 連鎖数に応じて色を変える
+  if (chainCount >= 5) {
+    chainEffect.style.color = '#FF69B4'; // ピンク
+    chainEffect.style.textShadow = '3px 3px 6px rgba(0,0,0,0.8), 0 0 20px rgba(255,105,180,0.6)';
+  } else if (chainCount >= 3) {
+    chainEffect.style.color = '#FF6B6B'; // 赤
+    chainEffect.style.textShadow = '3px 3px 6px rgba(0,0,0,0.8), 0 0 20px rgba(255,107,107,0.6)';
+  } else {
+    chainEffect.style.color = '#FFD700'; // 金色（デフォルト）
+  }
+  
+  document.body.appendChild(chainEffect);
+  
+  // アニメーション終了後に要素を削除
+  setTimeout(function() {
+    if (chainEffect && chainEffect.parentNode) {
+      chainEffect.remove();
+    }
+  }, 1500);
+}
+  
 function draw() {
   if (!gameStarted) return;
   
