@@ -1314,13 +1314,9 @@ if (totalCleared > 0) {
 } else {
     // ブロックが消去されなかった = 連鎖終了
     if (currentChainDepth >= 2) {
-      // 2連鎖以上の場合、実際のチェイン数はcurrentChainDepthそのまま
-      var actualChainCount = currentChainDepth;
+      // 2連鎖以上の場合、実際のチェイン数は(深度-1)
+      var actualChainCount = currentChainDepth - 1;
       totalChainCount += actualChainCount;
-      
-      // 連鎖エフェクトを表示（2チェイン以上の時のみ）
-      showChainEffect(actualChainCount);
-      
       console.log('連鎖終了！連鎖数:', actualChainCount, '累積チェイン:', totalChainCount);
     } else if (currentChainDepth === 1) {
       console.log('単発消去のためチェインカウントに加算されません');
