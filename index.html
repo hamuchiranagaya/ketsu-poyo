@@ -1296,11 +1296,15 @@ if (totalCleared > 0) {
     var addedPoints;
     
     if (currentChainDepth >= 2) {
-  // 2回目以降の消去（連鎖）の場合は「今回の深度」で倍率を計算
-  var multiplier = currentChainDepth;
-  addedPoints = basePoints * multiplier;
-  console.log('連鎖発生 - ' + currentChainDepth + 'チェイン, 消去数:', totalCleared, '倍率:', multiplier, '獲得点:', addedPoints);
-}
+      // 2回目以降の消去（連鎖）の場合は累積チェイン数を適用
+      var multiplier = totalChainCount + currentChainDepth;
+      addedPoints = basePoints * multiplier;
+      console.log('連鎖発生 - ' + currentChainDepth + 'チェイン, 消去数:', totalCleared, '倍率:', multiplier, '獲得点:', addedPoints);
+    } else {
+      // 単発消去の場合は倍率なし
+      addedPoints = basePoints;
+      console.log('単発消去 - 消去数:', totalCleared, '獲得点:', addedPoints);
+    }
     
     score += addedPoints;
     
@@ -1309,19 +1313,17 @@ if (totalCleared > 0) {
     updateHUD();
 } else {
     // ブロックが消去されなかった = 連鎖終了
-if (currentChainDepth === 1) {
-  // 1回だけ → 単発なので0チェイン
-  console.log('単発消去（チェインなし）');
-} else if (currentChainDepth >= 2) {
-  // 2回以上続いたら その深度＝チェイン数
-  totalChainCount += currentChainDepth;
-  console.log('連鎖終了！チェイン数:', currentChainDepth, '累積チェイン:', totalChainCount);
-}
-
-// リセット
-currentChainDepth = 0;
-chain = totalChainCount;
-updateHUD();
+    if (currentChainDepth >= 2) {
+      // 2連鎖以上の場合、実際のチェイン数は(深度-1)
+      var actualChainCount = currentChainDepth - 1;
+      totalChainCount += actualChainCount;
+      console.log('連鎖終了！連鎖数:', actualChainCount, '累積チェイン:', totalChainCount);
+    } else if (currentChainDepth === 1) {
+      console.log('単発消去のためチェインカウントに加算されません');
+    }
+    
+    // 連鎖深度をリセット
+    currentChainDepth = 0;
     
     // チェイン表示を更新
     chain = totalChainCount;
