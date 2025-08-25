@@ -114,46 +114,53 @@
   transform: translate(-50%, -50%);
   z-index: 999;
   pointer-events: none;
-  font-size: 64px;
+  font-size: 48px;
   font-weight: 900;
+  font-family: 'Orbitron', 'Impact', 'Arial Black', 'Hiragino Sans', 'Yu Gothic', sans-serif;
+  letter-spacing: 3px;
+  text-transform: uppercase;
   color: #FFD700;
+  background: linear-gradient(45deg, #FFD700, #FFA500, #FF6B35);
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
   text-shadow: 
-    4px 4px 0px #FF6B35,
-    8px 8px 0px #FF8E53,
-    0 0 30px rgba(255, 215, 0, 0.8),
-    0 0 60px rgba(255, 107, 53, 0.6);
+    3px 3px 0px #FF6B35,
+    6px 6px 0px #FF8E53,
+    0 0 20px rgba(255, 215, 0, 0.8),
+    0 0 40px rgba(255, 107, 53, 0.6);
   animation: chainExplosion 2s ease-out forwards;
   white-space: nowrap;
 }
 
 @keyframes chainExplosion {
   0% {
-    transform: translate(-50%, -50%) scale(0.1) rotate(-10deg);
+    transform: translate(-50%, -50%) scale(0.3) rotate(-5deg);
     opacity: 0;
-    filter: blur(10px);
+    filter: blur(5px);
   }
-  15% {
-    transform: translate(-50%, -50%) scale(1.5) rotate(5deg);
+  20% {
+    transform: translate(-50%, -50%) scale(1.1) rotate(2deg);
     opacity: 1;
     filter: blur(0px);
     text-shadow: 
-      4px 4px 0px #FF6B35,
-      8px 8px 0px #FF8E53,
-      0 0 40px rgba(255, 215, 0, 1),
-      0 0 80px rgba(255, 107, 53, 0.8);
+      3px 3px 0px #FF6B35,
+      6px 6px 0px #FF8E53,
+      0 0 25px rgba(255, 215, 0, 1),
+      0 0 50px rgba(255, 107, 53, 0.8);
   }
-  30% {
-    transform: translate(-50%, -50%) scale(1.2) rotate(-2deg);
-    opacity: 1;
-  }
-  70% {
+  40% {
     transform: translate(-50%, -50%) scale(1.0) rotate(0deg);
     opacity: 1;
   }
+  80% {
+    transform: translate(-50%, -50%) scale(0.9) rotate(0deg);
+    opacity: 1;
+  }
   100% {
-    transform: translate(-50%, -55%) scale(0.7) rotate(0deg);
+    transform: translate(-50%, -52%) scale(0.7) rotate(0deg);
     opacity: 0;
-    filter: blur(5px);
+    filter: blur(2px);
   }
 }
 
@@ -1615,29 +1622,29 @@ function showChainEffect(chainCount) {
   // メインの連鎖テキスト
   var chainEffect = document.createElement('div');
   chainEffect.className = 'chain-effect';
-  chainEffect.textContent = chainCount + 'チェイン！！';
+  chainEffect.textContent = chainCount + 'チェイン！';
   
   // 連鎖数に応じて色とサイズを変える
   if (chainCount >= 10) {
     chainEffect.style.color = '#FF1493'; // ディープピンク
-    chainEffect.style.fontSize = '80px';
+    chainEffect.style.fontSize = '56px';
     chainEffect.style.textShadow = 
-      '4px 4px 0px #8B008B, 8px 8px 0px #FF69B4, 0 0 40px rgba(255, 20, 147, 1), 0 0 80px rgba(255, 105, 180, 0.8)';
+      '3px 3px 0px #8B008B, 6px 6px 0px #FF69B4, 0 0 25px rgba(255, 20, 147, 1), 0 0 50px rgba(255, 105, 180, 0.8)';
   } else if (chainCount >= 7) {
     chainEffect.style.color = '#FF4500'; // オレンジレッド
-    chainEffect.style.fontSize = '76px';
+    chainEffect.style.fontSize = '54px';
     chainEffect.style.textShadow = 
-      '4px 4px 0px #DC143C, 8px 8px 0px #FF6347, 0 0 40px rgba(255, 69, 0, 1), 0 0 80px rgba(220, 20, 60, 0.8)';
+      '3px 3px 0px #DC143C, 6px 6px 0px #FF6347, 0 0 25px rgba(255, 69, 0, 1), 0 0 50px rgba(220, 20, 60, 0.8)';
   } else if (chainCount >= 5) {
     chainEffect.style.color = '#FF6B6B'; // 赤
-    chainEffect.style.fontSize = '72px';
+    chainEffect.style.fontSize = '52px';
     chainEffect.style.textShadow = 
-      '4px 4px 0px #DC143C, 8px 8px 0px #FF1493, 0 0 40px rgba(255, 107, 107, 1), 0 0 80px rgba(220, 20, 60, 0.8)';
+      '3px 3px 0px #DC143C, 6px 6px 0px #FF1493, 0 0 25px rgba(255, 107, 107, 1), 0 0 50px rgba(220, 20, 60, 0.8)';
   } else if (chainCount >= 3) {
     chainEffect.style.color = '#FFA500'; // オレンジ
-    chainEffect.style.fontSize = '68px';
+    chainEffect.style.fontSize = '50px';
     chainEffect.style.textShadow = 
-      '4px 4px 0px #FF6B35, 8px 8px 0px #FF8E53, 0 0 40px rgba(255, 165, 0, 1), 0 0 80px rgba(255, 107, 53, 0.8)';
+      '3px 3px 0px #FF6B35, 6px 6px 0px #FF8E53, 0 0 25px rgba(255, 165, 0, 1), 0 0 50px rgba(255, 107, 53, 0.8)';
   }
   
   document.body.appendChild(chainEffect);
